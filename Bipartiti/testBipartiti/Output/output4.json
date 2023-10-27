@@ -1,0 +1,20 @@
+{"Node": 0,
+"Coreness": 0,
+"NumeroNodi": 0,
+"NumeroNodiL": 0,
+"NumeroNodiR": 0,
+"NumeroArchi": 0,
+"minCoreness": 0,
+"maxCoreness": 0,
+"children": [
+	{"Node": 2001,
+	 "Coreness": 2,
+	 "minCoreness":  1,
+	 "maxCoreness": 2,
+	 "NumeroNodi": 7,
+	 "NumeroNodiR": 4,
+	 "NumeroNodiL": 3,
+	 "NumeroArchi": 0,
+	 "children": [
+	 ]} ]
+}

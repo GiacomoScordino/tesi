@@ -65,6 +65,7 @@ function collapse(node, distance){
                 node.NumeroArchi += child.NumeroArchi
                 node.NumeroNodiR += child.NumeroNodiR
                 node.NumeroNodiL += child.NumeroNodiL
+                node.NumeroNodi += child.NumeroNodi
                 if(child.maxCoreness > node.maxCoreness)
                     node.maxCoreness = child.maxCoreness
             }
@@ -92,6 +93,7 @@ function collapse(node, distance){
 }
 
 function charts(data, planeData, containerID){
+   
     // Remove old SVG if any
     d3.select(containerID).select("#barchart").remove()
     d3.select(containerID).select("#barchart").remove()
@@ -105,7 +107,15 @@ function charts(data, planeData, containerID){
     var width = planeData.length * 50 + margin+rightMargin;
     var maxNodiL = planeData.reduce(function(prev, current){return (prev.numNodiL > current.numNodiL) ? prev : current}).numNodiL;
     var maxNodiR = planeData.reduce(function(prev, current){return (prev.numNodiR > current.numNodiR) ? prev : current}).numNodiR;
-    var maxNodi = planeData.reduce(function(prev, current){return (prev.numNodi > current.numNodi) ? prev : current}).numNodi;
+    var maxNodi=0;
+    if(maxNodiL >= maxNodiR)
+    {
+        maxNodi = maxNodiL;
+    }
+    else
+    {
+        maxNodi=maxNodiR;
+    }
     var heightL = Math.log10(maxNodi)*100+100//800;
     var svg = d3.select(containerID).append("svg").attr("id", "barchart").attr("width", width+rightMargin).attr("height", heightL);
     width = width-margin;
@@ -115,7 +125,7 @@ function charts(data, planeData, containerID){
     
     
     var xScale = d3.scaleBand().domain(planeData.map(function(d) { return d.node; })).range([0, width]).padding(xPadding),
-        yScaleL = d3.scaleLog().domain([1, maxNodiL]).range([heightL, 0]).nice();
+        yScaleL = d3.scaleLog().domain([1, maxNodi]).range([heightL, 0]).nice();
         format = yScaleL.tickFormat(10, "");
         yScaleL.ticks(10).map(format);
     
@@ -242,7 +252,7 @@ function charts(data, planeData, containerID){
         xPadding = 0.4;
         
         var xScale = d3.scaleBand().domain(planeData.map(function(d) { return d.node; })).range([0, width]).padding(xPadding),
-            yScaleR = d3.scaleLog().domain([maxNodiR, 1]).range([0,heightR]).nice();
+            yScaleR = d3.scaleLog().domain([maxNodi, 1]).range([0,heightR]).nice();
             format = yScaleR.tickFormat(10, "");
             yScaleR.ticks(10).map(format);
         
