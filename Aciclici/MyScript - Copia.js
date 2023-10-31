@@ -119,14 +119,20 @@ function charts(data, planeData, containerID){
     width = width-margin;
     height = height-margin;
     xPadding = 0.4;
+    
+    
+    
     var xScale = d3.scaleBand().domain(planeData.map(function(d) { return d.node; })).range([0, width]).padding(xPadding),
         yScale = d3.scaleLog().domain([1, maxNodi]).range([height, 0]).nice();
         format = yScale.tickFormat(10, "");
         yScale.ticks(10).map(format);
+    
     var g = svg.append("g").attr("transform", "translate(" + 100 + "," + 100 + ")");
+    
     // X axis
     g.append("g").attr("transform", "translate(0," + height + ")").call(d3.axisBottom(xScale)
         .tickFormat(function(dName) {let nodeX = planeData.find(d  => d.node==dName); return  nodeX.minCoreness+"-"+nodeX.maxCoreness}))
+    
     // Y axis
     g.append("g").call(d3.axisLeft(yScale).tickFormat(function (d) {
             return yScale.tickFormat(4,d3.format(",d"))(d)
@@ -136,6 +142,7 @@ function charts(data, planeData, containerID){
              .attr("dy", "0.71em")
              .attr("text-anchor", "end")
              .text("value");
+    
     // Y axis Right
     var axisYR = g.append("g").call(d3.axisRight(yScale).tickFormat(function (d) {
             return yScale.tickFormat(4,d3.format(",d"))(d)
@@ -153,6 +160,7 @@ function charts(data, planeData, containerID){
     //var colorScale = d3.scaleSequential().domain([0,maxCoreness]).range(['#ffffe5', '#004529']);
     var myScale = d3.scaleLinear().domain([0,maxCoreness]).range([1, 0]);
     var colorScale = function(d){return d3.interpolateViridis(myScale(d))}
+    
     // Bars
     g.selectAll(".bar")
              .data(planeData)
@@ -165,20 +173,29 @@ function charts(data, planeData, containerID){
              .attr("width", xScale.bandwidth())
              .attr("height", function(d) { return height - yScale(d.numNodi); })
              .attr("fill", function(d){ return colorScale(d.maxCoreness)});
+    /*
+    planeData.forEach(element => {
+        d3.select("#barchart").append("rect")
+        .attr("x", xScale(element.node)+xScale.bandwidth()/2+100-0.5)
+        .attr("y", height+100)
+        .attr("fill", d => "red")
+        .attr("width", d => (2))
+        .attr("height", d => (1000))      
+    });
+    */
+
     // ADD <br> element
     d3.select(containerID).append("br")
+    
     // Nested Treemap
+    
     compute_height_depth(data, 0)
     padding_top = 5
     padding_bottom = 5
     smallest_rect_height = 20
-    const numLevel = 4;
-    treemapHeight = ((data.height+1)*(padding_top + padding_bottom) + smallest_rect_height)*(numLevel+1)
-    var svg2 = d3.select(containerID).append("svg")
-                    .attr("id", "treemap")
-                    .attr("width", width+margin+rightMargin)
-                    .attr("height", treemapHeight)
-                    //.style("transform", "scaleY(-1)"); 
+    treemapHeight = ((data.height+1)*(padding_top + padding_bottom) + smallest_rect_height)*7
+    var svg2 = d3.select(containerID).append("svg").attr("id", "treemap").attr("width", width+margin+rightMargin).attr("height", treemapHeight);
+    
     function _treemap(data){
       return d3.treemap()
         .size([width, treemapHeight])
@@ -191,30 +208,43 @@ function charts(data, planeData, containerID){
             .sort((a, b) => b.NumeroNodi - a.NumeroNodi)
         )
     }
+    
     const root = _treemap(data);
+
     let shadow = svg2.append("filter")
         .attr("id", "shadow")
         .append("feDropShadow")
         .attr("flood-opacity", 0.3)
         .attr("dx", 0)
         .attr("stdDeviation", 3);
+
+
     root.eachAfter(function(d){d.x0 = xScale(d.data.Node)+100; d.x1 = d.x0+xScale.bandwidth()});  
+    
     var maxHeight=data.height
+
     root.eachAfter(function(d){
+        //d.y1=d.data.MaxLevel*smallest_rect_height
         levels= d.data.MaxLevel-d.data.MinLevel-1;
         d.y0=(smallest_rect_height+10*(maxHeight+1))*(d.data.MinLevel+1)+5*d.depth;
-        d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*2+10*(d.data.MaxLevel-d.data.MinLevel)+(smallest_rect_height+10*maxHeight)*levels+11.5*d.depth;
+        d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*2+10*(d.data.MaxLevel-d.data.MinLevel)+(smallest_rect_height+10*maxHeight)*levels+10*d.depth;
         console.log(d.y0);
         //d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*(d.data.MaxLevel-d.data.MinLevel+1)+10*(d.data.MaxLevel-d.data.MinLevel);
+        
         //d.y1=d.data.MaxLevel*smallest_rect_height+((d.data.MaxLevel-d.data.MinLevel)+2)*10*(maxHeight-d.depth);
         //d.y0=d.data.MinLevel*smallest_rect_height+((d.data.MaxLevel-d.data.MinLevel)+1)*5*(maxHeight-d.depth);
+        console.log(d.y0);
         if (d.children){
             max = d.children.reduce(function(prev, current){return prev.x1 > current.x1 ? prev : current}).x1
             if(max > d.x1)
             d.x1 = max+4*xScale.padding()
+            
+            //sum = d.children.reduce(function(sum, current){return sum+current.x1-current.x0+4*xScale.padding()}, 0);
+            //d.x1 += sum;
         }
         console.log(d);
     });
+
     const node = svg2.selectAll("g")
         .data(d3.group(root, d => d.depth))
         .join("g")
@@ -222,22 +252,29 @@ function charts(data, planeData, containerID){
         .selectAll("g")
         .data(d => d[1])
         .join("g")
-        .attr("transform", d => `translate(${d.x0},${d.y0})`); 
+        .attr("transform", d => `translate(${d.x0},${d.y0})`);
+    
     node.append("rect")
         .attr("id", d => (d.nodeUid = d3.select("node").id))//DOM.uid("node")).id)
         .attr("fill", d => colorScale(d.data.maxCoreness))
         .attr("width", d => (d.x1 - d.x0))
         .attr("height", d => (d.y1))
         .attr("rx", 15);
+// Inizializza la variabile numLevel a 4
+const numLevel = 4;
+
 // Calcola l'altezza media dei rettangoli a ciascun livello
 const levelHeights = [];
+alert(maxHeight);
 for (let i = 1; i <= numLevel; i++) {
-    const centerY = 0.5 * smallest_rect_height + 5 * (maxHeight + 1) + (smallest_rect_height + 10 * (maxHeight + 1)) * i + 1;
+    const centerY = 0.5 * smallest_rect_height + 5*(maxHeight+1) + (smallest_rect_height + 10 * (maxHeight+1)) * i + 1;
     levelHeights.push(centerY);
 }
+
 // Aggiungi linee orizzontali per ogni livello dei nodi
-for (let i = 0; i < numLevel; i++) {
+for (let i = 0; i <= numLevel; i++) {
     const centerY = levelHeights[i];
+
     svg2.append("line")
         .attr("x1", d => root.x0) // Inizio della linea all'estremità sinistra del rettangolo radice
         .attr("x2", d => root.x1) // Fine della linea all'estremità destra del rettangolo radice
@@ -245,44 +282,18 @@ for (let i = 0; i < numLevel; i++) {
         .attr("y2", centerY) // Posizione Y centrata
         .attr("stroke", "black") // Colore delle linee
         .attr("stroke-width", 1); // Larghezza delle linee
-    // Aggiungi il testo
-    svg2.append("text")
-        .attr("x", root.x0 - 10) // Posizione X a sinistra della linea
-        .attr("y", centerY) // Posizione Y centrata
-        .attr("text-anchor", "end") // Allinea il testo a destra
-        .text(i); // Testo con il valore del livello
 }
-/*
-const levelHeights = [];
-for (let i = numLevel; i >= 1; i--) {
-    const centerY = 0.5 * smallest_rect_height + 5 * (maxHeight + 1) + (smallest_rect_height + 10 * (maxHeight + 1)) * i + 1;
-    levelHeights.push(centerY);
-}
-// Aggiungi linee orizzontali per ogni livello dei nodi
-for (let i = numLevel - 1; i >= 0; i--) {
-    const centerY = levelHeights[i];
-    svg2.append("line")
-        .attr("x1", d => root.x0) // Inizio della linea all'estremità sinistra del rettangolo radice
-        .attr("x2", d => root.x1) // Fine della linea all'estremità destra del rettangolo radice
-        .attr("y1", centerY) // Posizione Y centrata
-        .attr("y2", centerY) // Posizione Y centrata
-        .attr("stroke", "black") // Colore delle linee
-        .attr("stroke-width", 1); // Larghezza delle linee
-    // Aggiungi il testo
-    svg2.append("text")
-        .attr("x", root.x0 - 10) // Posizione X a sinistra della linea
-        .attr("y", -centerY) // Posizione Y centrata e ribaltata
-        .attr("text-anchor", "end") // Allinea il testo a destra
-        //.attr("transform", "scale(1,-1)") // Ribalta verticalmente il testo
-        .text(i); // Testo con il valore del livello
-}
-*/
+
+
+
     node.filter(d => d.children).selectAll("tspan")
         .attr("dx", 3)
         .attr("y", 13);
+
     node.filter(d => !d.children).selectAll("tspan")
         .attr("x", 3)
         .attr("y", (d, i, nodes) => `${(i === nodes.length - 1) * 0.3 + 1.1 + i * 0.9}em`);
+
     return svg2.node();
 }
     //     1/2 dimensioneRettangolo + 5*altezza + (dimensioneRettangolo+10*(altezza+1))*livello+1
@@ -292,7 +303,8 @@ function createButton(containerID){
     container.append("input").attr("type", "number").attr("id", "scale").attr("value", "1").attr("min", "1")
     container.append("input").attr("type", "button").attr("id", "scaleChangeButton").attr("value", "Collapse").attr("onclick", "init(charts)")
     container.append("br")
-}   
+}
+    
 function init(callBack){
     dist = parseInt(d3.select("#scale").property("value"));
     getData("output.json", function(data){
@@ -303,6 +315,7 @@ function init(callBack){
         console.log(planeData)
     })
 }
+
 $(document).ready(function(){
     createButton("#container")
     getData("output.json", function(data){
@@ -348,6 +361,7 @@ $(document).ready(function(){
         }
     })
 })
+
 /*
 $(document).ready(function(){
     createButton("#container")
