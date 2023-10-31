@@ -1,0 +1,32 @@
+{"Node": 0,
+"Coreness": 0,
+"NumeroNodi": 11,
+"Livelli":[1, 4, 2, 4],
+"MinLevel":0,
+"MaxLevel":3,
+"NumeroArchi": 0,
+"minCoreness": 0,
+"maxCoreness": 0,
+"children": [
+	{"Node": 2001,
+	 "Coreness": 2,
+	 "minCoreness":  1,
+	 "maxCoreness": 2,
+	 "NumeroNodi": 10,
+	 "Livelli":[0, 4, 2, 4],
+	 "MinLevel":0,
+	 "MaxLevel":3,
+	 "NumeroArchi": 0,
+	 "children": [
+		{"Node": 3003,
+		 "Coreness": 3,
+		 "minCoreness":  3,
+		 "maxCoreness": 3,
+		 "NumeroNodi": 5,
+	 	 "Livelli":[0, 1, 1, 0],
+		 "MinLevel":1,
+		 "MaxLevel":2,
+		 "NumeroArchi": 0,
+		 "children": [
+		 ]}	 ]} ]
+}
