@@ -74,9 +74,7 @@ function collapse(node, distance){
         node.children = new_children
         new_children = []
     } while (node.children.length > 0)
-
     node.children = old_children // set the new children
-
     // For each children check if its minCoreness has to be updated, as now it is part of the parent
     var maxCor = node.maxCoreness
     node.children.forEach(child => {
@@ -107,6 +105,7 @@ function charts(data, planeData, containerID){
     // Remove old SVG if any
     d3.select(containerID).select("#barchart").remove()
     d3.select(containerID).select("#treemap").remove()
+    d3.select(containerID).select("br").remove()
     d3.select(containerID).select("br").remove()
     d3.select(containerID).append("br")
     // SVG and scales definition
@@ -172,8 +171,8 @@ function charts(data, planeData, containerID){
     padding_top = 5
     padding_bottom = 5
     smallest_rect_height = 20
-    const numLevel = 4;
-    treemapHeight = ((data.height+1)*(padding_top + padding_bottom) + smallest_rect_height)*(numLevel+1)
+    const numLevel = 6;
+    treemapHeight = ((data.height+1)*(padding_top + padding_bottom) + smallest_rect_height)*(numLevel)
     var svg2 = d3.select(containerID).append("svg")
                     .attr("id", "treemap")
                     .attr("width", width+margin+rightMargin)
@@ -202,7 +201,7 @@ function charts(data, planeData, containerID){
     var maxHeight=data.height
     root.eachAfter(function(d){
         levels= d.data.MaxLevel-d.data.MinLevel-1;
-        d.y0=(smallest_rect_height+10*(maxHeight+1))*(d.data.MinLevel+1)+5*d.depth;
+        d.y0=(smallest_rect_height+10*(maxHeight+1))*(d.data.MinLevel)+5*d.depth;
         d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*2+10*(d.data.MaxLevel-d.data.MinLevel)+(smallest_rect_height+10*maxHeight)*levels+11.5*d.depth;
         console.log(d.y0);
         //d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*(d.data.MaxLevel-d.data.MinLevel+1)+10*(d.data.MaxLevel-d.data.MinLevel);
@@ -229,9 +228,10 @@ function charts(data, planeData, containerID){
         .attr("width", d => (d.x1 - d.x0))
         .attr("height", d => (d.y1))
         .attr("rx", 15);
+
 // Calcola l'altezza media dei rettangoli a ciascun livello
 const levelHeights = [];
-for (let i = 1; i <= numLevel; i++) {
+for (let i = 0; i <= numLevel; i++) {
     const centerY = 0.5 * smallest_rect_height + 5 * (maxHeight + 1) + (smallest_rect_height + 10 * (maxHeight + 1)) * i + 1;
     levelHeights.push(centerY);
 }
