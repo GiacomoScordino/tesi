@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#define V 68349500   // 150000000
-#define E 1811849350 // 2000000000
+#define V 6834   // 150000000
+#define E 1811 // 2000000000
 // 68,349,466 &  1,811,849,342
 
 // struttura di output
@@ -17,6 +17,7 @@ typedef struct node_tree_struct
     int n_numerousness;
     int e_numerousness;
     int n_tm_numerousness;
+    //int* level_numerousness;
     int e_tm_numerousness;
     int depth;
     struct node_tree_struct *child;
@@ -49,9 +50,19 @@ typedef struct vertex_struct
     int id;
     int coreness;
     int degree;
+    int indegree;
+    int outdegree;
+    int level;
     node_tree *v_tree;
     vicino *primo_vicino;
 } vertex;
+
+typedef struct list_vertex_struct
+{
+    vertex* vertice;
+    struct list_vertex_struct* next;
+} list_vertex;
+
 
 typedef struct edge_struct
 {
@@ -138,23 +149,29 @@ graph *set_input(char *input_path)
                     if (v_start->id != 0)
                     {
                         v_start->degree++;
+                        v_start->outdegree++;
                     }
                     else
                     {
                         v_start->id = start;
                         v_start->degree = 1;
+                        v_start->outdegree=1;
                     }
 
                     if (v_end->id != 0)
                     {
                         v_end->degree++;
+                        v_end->indegree++;
                     }
                     else
                     {
                         v_end->id = end;
                         v_end->degree = 1;
+                        v_end->indegree=1;
                     }
-
+                    printf("start: %d, grado: %d, indegree: %d, outdegree: %d \n",v_start->id,v_start->degree, v_start->indegree,v_start->outdegree);
+                    printf("end: %d, grado: %d, indegree: %d, outdegree: %d \n",v_end->id,v_end->degree, v_end->indegree,v_end->outdegree);
+                    printf("----------------------------------------------------\n");
                     vicino *vic = (vicino *)malloc(sizeof(vicino));
                     vicino *vic2 = (vicino *)malloc(sizeof(vicino));
                     if (vic == NULL || vic2 == NULL)
@@ -2190,6 +2207,82 @@ void calculate_depth(graph *grafo)
         }
     }
 }
+void insertAtEnd(list_vertex **head, vertex v) {
+    list_vertex  *newVertex = (list_vertex *)malloc(sizeof(list_vertex ));
+    if (newVertex == NULL) {
+        printf("Errore di allocazione di memoria.");
+        exit(1);
+    }
+
+    newVertex->vertice=&v;
+    newVertex->next = NULL;
+
+    if (*head == NULL) {
+        // Se la lista è vuota, il nuovo vertice diventa la testa
+        *head = newVertex;
+    } else {
+        // Altrimenti, cerca l'ultimo vertice e collega il nuovo vertice
+        list_vertex *current = *head;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = newVertex;
+    }
+}
+void compute_layers_(graph *grafo, int l, list_vertex* a, list_vertex* b){
+     while (a != NULL) {
+        grafo->vertices[a->vertice->id].level=l;
+        vicino* vicino=grafo->vertices[a->vertice->id].primo_vicino;
+        while(vicino!=NULL){
+            grafo->vertices[vicino->id].indegree-=1;
+            if(grafo->vertices[vicino->id].indegree==0){
+                insertAtEnd(&b,grafo->vertices[vicino->id]);
+            }
+            vicino=vicino->next;
+        }
+        a = a->next;
+    }
+    l++;
+    if(b!=NULL){
+        compute_layers_(grafo,l,b,a);
+    }
+}
+
+void compute_layers(graph *g){
+    // Crea una coda per l'ordinamento topologico
+    int queue[g->num_vertices];
+    int front = 0, rear = 0;
+    //int level = 0;
+
+    // Inserisci i vertici con grado di entrata 0 nella coda
+    for (int i = 1; i <= g->num_vertices; i++) {
+        if (g->vertices[i].indegree == 0) {
+            queue[rear++] = i;
+            g->vertices[i].level = 0;
+            
+        }
+    }
+
+    while (front < rear) {
+        int current_vertex_id = queue[front++];
+        //level++;
+        // Riduci il grado di entrata dei vicini e mettili nella coda se il loro indegree diventa 0
+        vicino *neighbor = g->vertices[current_vertex_id].primo_vicino;
+        
+        while (neighbor != NULL) {
+            int neighbor_id = neighbor->id;
+           
+            g->vertices[neighbor_id].indegree--;
+            if (g->vertices[neighbor_id].indegree == 0) {
+                queue[rear++] = neighbor_id;
+                g->vertices[neighbor_id].level = g->vertices[current_vertex_id].level+1;
+            }
+
+            neighbor = neighbor->next;
+        }
+    }
+}
+
 
 int main(int argc, char **argv)
 {
@@ -2217,7 +2310,26 @@ int main(int argc, char **argv)
     //QueryPerformanceCounter(&t2);
     //diff_sec = (t2.QuadPart - t1.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine setting input in %f s\n", diff_sec);
-
+    /*
+    int *A;
+    int *B;
+    int num_radice=0;
+    */
+    int num_radice=0;
+    list_vertex* a=NULL ;
+    list_vertex* b=NULL ;
+    
+    for (int i=1; i<=graph_input->num_vertices;i++){
+        if(graph_input->vertices[i].indegree==0){
+          insertAtEnd(&a,graph_input->vertices[i]);
+          
+        }
+    }
+    compute_layers(graph_input);
+    for (int i=1; i<=graph_input->num_vertices;i++){
+        printf("vertice: %d, Livello: %d\n",i, graph_input->vertices[i].level);
+        printf("--------------------------\n");
+    }
     // funzione per calcolare la coreness dei nodi
     //printf("Inizio calcolo coreness\n");
     compute_coreness(graph_input);
