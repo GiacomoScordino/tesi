@@ -64,6 +64,7 @@ function collapse(node, distance){
                 new_children = new_children.concat(child.children)
                 node.NumeroArchi += child.NumeroArchi
                 node.NumeroNodi += child.NumeroNodi
+               
                 if(child.maxCoreness > node.maxCoreness)
                     node.maxCoreness = child.maxCoreness
             }
@@ -73,6 +74,7 @@ function collapse(node, distance){
         })
         node.children = new_children
         new_children = []
+        
     } while (node.children.length > 0)
     node.children = old_children // set the new children
     // For each children check if its minCoreness has to be updated, as now it is part of the parent
@@ -86,6 +88,7 @@ function collapse(node, distance){
         }
         collapse(child, distance)    
     });
+
 }
 
 function computeHeights(child){
@@ -100,7 +103,7 @@ function computeHeights(child){
 }
 
 function charts(data, planeData, containerID){
-    console.log(data)
+   
     planeData.forEach(child => computeHeights(child));
     // Remove old SVG if any
     d3.select(containerID).select("#barchart").remove()
@@ -203,7 +206,7 @@ function charts(data, planeData, containerID){
         levels= d.data.MaxLevel-d.data.MinLevel-1;
         d.y0=(smallest_rect_height+10*(maxHeight+1))*(d.data.MinLevel)+5*d.depth;
         d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*2+10*(d.data.MaxLevel-d.data.MinLevel)+(smallest_rect_height+10*maxHeight)*levels+11.5*d.depth;
-        console.log(d.y0);
+        
         //d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*(d.data.MaxLevel-d.data.MinLevel+1)+10*(d.data.MaxLevel-d.data.MinLevel);
         //d.y1=d.data.MaxLevel*smallest_rect_height+((d.data.MaxLevel-d.data.MinLevel)+2)*10*(maxHeight-d.depth);
         //d.y0=d.data.MinLevel*smallest_rect_height+((d.data.MaxLevel-d.data.MinLevel)+1)*5*(maxHeight-d.depth);
@@ -212,7 +215,7 @@ function charts(data, planeData, containerID){
             if(max > d.x1)
             d.x1 = max+4*xScale.padding()
         }
-        console.log(d);
+      
     });
     const node = svg2.selectAll("g")
         .data(d3.group(root, d => d.depth))
@@ -235,10 +238,13 @@ function charts(data, planeData, containerID){
         const centerY = 0.5 * smallest_rect_height + 5 * (maxHeight + 1) + (smallest_rect_height + 10 * (maxHeight + 1)) * i + 1;
         levelHeights.push(centerY);
     }
+
     var levelGap=levelHeights[1]-levelHeights[0];
-    console.log(levelHeights);
-    // Aggiungi linee orizzontali per ogni livello dei nodi
+    console.log(levelGap);
+    
+    // Aggiunge linee orizzontali per ogni livello dei nodi
     for(let i=0; i<levelHeights.length;i++){
+        console.log(levelHeights[i]);
         node.append("line")
             .attr("x1", 0) // Inizio della linea all'estremità sinistra del rettangolo
             .attr("x2", d => (d.x1 - d.x0)) // Fine della linea all'estremità destra del rettangolo
@@ -249,46 +255,73 @@ function charts(data, planeData, containerID){
             .attr("stroke-dasharray", "2.5") // Larghezza della linea (puoi cambiare "2" con la larghezza desiderata)
             .style("display", d => d.data.Livelli[i]<1? "block" : "none");
         }
+    // Aggiunge linee orizzontali tratteggiate per ogni livello dei nodi assente
     for(let i=0; i<levelHeights.length;i++){
     node.append("line")
         .attr("x1", 0) // Inizio della linea all'estremità sinistra del rettangolo
         .attr("x2", d => (d.x1 - d.x0)) // Fine della linea all'estremità destra del rettangolo
-        .attr("y1", d=>levelHeights[i]- (90*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
-        .attr("y2",d=>levelHeights[i]- (90*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
+        .attr("y1", d=>levelHeights[i]- (levelGap*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
+        .attr("y2",d=>levelHeights[i]- (levelGap*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
         .attr("stroke", "black") // Colore della linea (puoi cambiare "red" con il colore desiderato)
         .attr("stroke-width", 2) // Larghezza della linea (puoi cambiare "2" con la larghezza desiderata)
         .style("display", d => d.data.Livelli[i]>0? "block" : "none");
     }
+    /*
+    //aggiunte intestazioni per le linee dei livelli
     for (let i = 0; i < numLevel; i++) {
         const centerY = levelHeights[i];
         svg2.append("text")
         .attr("x", root.x0 - 10) // Posizione X a sinistra della linea
-        .attr("y", centerY) // Posizione Y centrata
+        .attr("y", centerY-3) // Posizione Y centrata
         .attr("text-anchor", "end") // Allinea il testo a destra
         .text(i); // Testo con il valore del livello
     }
+    */
+    //aggiunte linee ai bordi dei rettangoli
+    for (let i = 0; i <= numLevel - 1; i++) {
+        const centerY = levelHeights[i];
+        svg2.append("line")
+            .attr("x1", root.x0-50) // Inizio della linea all'estremità sinistra del rettangolo radice
+            .attr("x2", d => root.x0) // Fine della linea all'estremità destra del rettangolo radice
+            .attr("y1", centerY) // Posizione Y centrata
+            .attr("y2", centerY) // Posizione Y centrata
+            .attr("stroke", "black") // Colore delle linee
+            .attr("stroke-width", 2); // Larghezza delle linee
+    }
+    for (let i = 0; i <= numLevel - 1; i++) {
+        const centerY = levelHeights[i];
+        svg2.append("line")
+            .attr("x1", root.x1) // Inizio della linea all'estremità sinistra del rettangolo radice
+            .attr("x2", root.x1+50) // Fine della linea all'estremità destra del rettangolo radice
+            .attr("y1", centerY) // Posizione Y centrata
+            .attr("y2", centerY) // Posizione Y centrata
+            .attr("stroke", "black") // Colore delle linee
+            .attr("stroke-width", 2); // Larghezza delle linee
+    }
 
 
-/*
 // Aggiungi linee orizzontali per ogni livello dei nodi
-for (let i = numLevel - 1; i >= 0; i--) {
+/*
+for (let i = 0; i <= numLevel - 1; i++) {
     const centerY = levelHeights[i];
     svg2.append("line")
-        .attr("x1", d => root.x0) // Inizio della linea all'estremità sinistra del rettangolo radice
-        .attr("x2", d => root.x1) // Fine della linea all'estremità destra del rettangolo radice
+        .attr("x1", root.x0) // Inizio della linea all'estremità sinistra del rettangolo radice
+        .attr("x2", root.x1) // Fine della linea all'estremità destra del rettangolo radice
         .attr("y1", centerY) // Posizione Y centrata
         .attr("y2", centerY) // Posizione Y centrata
         .attr("stroke", "black") // Colore delle linee
         .attr("stroke-width", 1); // Larghezza delle linee
-    // Aggiungi il testo
-    svg2.append("text")
-        .attr("x", root.x0 - 10) // Posizione X a sinistra della linea
-        .attr("y", -centerY) // Posizione Y centrata e ribaltata
-        .attr("text-anchor", "end") // Allinea il testo a destra
-        //.attr("transform", "scale(1,-1)") // Ribalta verticalmente il testo
-        .text(i); // Testo con il valore del livello
 }
 */
+// Aggiungi il testo
+for (let i = 0; i < numLevel; i++) {
+    const centerY = levelHeights[i];
+    svg2.append("text")
+    .attr("x", root.x0 - 10) // Posizione X a sinistra della linea
+    .attr("y", centerY-3) // Posizione Y centrata
+    .attr("text-anchor", "end") // Allinea il testo a destra
+    .text(i); // Testo con il valore del livello
+}
     node.filter(d => d.children).selectAll("tspan")
         .attr("dx", 3)
         .attr("y", 13);
@@ -311,8 +344,7 @@ function init(callBack){
         collapse(data, dist)
         var planeData = planarize(data);
         callBack(data, planeData, "#container")
-        console.log(data)
-        console.log(planeData)
+    
     })
 }
 $(document).ready(function(){
