@@ -229,35 +229,47 @@ function charts(data, planeData, containerID){
         .attr("height", d => (d.y1))
         .attr("rx", 15);
 
-// Calcola l'altezza media dei rettangoli a ciascun livello
-const levelHeights = [];
-for (let i = 0; i <= numLevel; i++) {
-    const centerY = 0.5 * smallest_rect_height + 5 * (maxHeight + 1) + (smallest_rect_height + 10 * (maxHeight + 1)) * i + 1;
-    levelHeights.push(centerY);
-}
-// Aggiungi linee orizzontali per ogni livello dei nodi
-for (let i = 0; i < numLevel; i++) {
-    const centerY = levelHeights[i];
-    svg2.append("line")
-        .attr("x1", d => root.x0) // Inizio della linea all'estremità sinistra del rettangolo radice
-        .attr("x2", d => root.x1) // Fine della linea all'estremità destra del rettangolo radice
-        .attr("y1", centerY) // Posizione Y centrata
-        .attr("y2", centerY) // Posizione Y centrata
-        .attr("stroke", "black") // Colore delle linee
-        .attr("stroke-width", 1); // Larghezza delle linee
-    // Aggiungi il testo
-    svg2.append("text")
+    // Calcola l'altezza media dei rettangoli a ciascun livello
+    const levelHeights = [];
+    for (let i = 0; i <= numLevel; i++) {
+        const centerY = 0.5 * smallest_rect_height + 5 * (maxHeight + 1) + (smallest_rect_height + 10 * (maxHeight + 1)) * i + 1;
+        levelHeights.push(centerY);
+    }
+    var levelGap=levelHeights[1]-levelHeights[0];
+    console.log(levelHeights);
+    // Aggiungi linee orizzontali per ogni livello dei nodi
+    for(let i=0; i<levelHeights.length;i++){
+        node.append("line")
+            .attr("x1", 0) // Inizio della linea all'estremità sinistra del rettangolo
+            .attr("x2", d => (d.x1 - d.x0)) // Fine della linea all'estremità destra del rettangolo
+            .attr("y1", d=>levelHeights[i]- ((levelGap)*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
+            .attr("y2",d=>levelHeights[i]- ((levelGap)*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
+            .attr("stroke", "black") // Colore della linea (puoi cambiare "red" con il colore desiderato)
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "2.5") // Larghezza della linea (puoi cambiare "2" con la larghezza desiderata)
+            .style("display", d => d.data.Livelli[i]<1? "block" : "none");
+        }
+    for(let i=0; i<levelHeights.length;i++){
+    node.append("line")
+        .attr("x1", 0) // Inizio della linea all'estremità sinistra del rettangolo
+        .attr("x2", d => (d.x1 - d.x0)) // Fine della linea all'estremità destra del rettangolo
+        .attr("y1", d=>levelHeights[i]- (90*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
+        .attr("y2",d=>levelHeights[i]- (90*d.data.MinLevel)-5*d.depth )// Specifica la posizione Y desiderata
+        .attr("stroke", "black") // Colore della linea (puoi cambiare "red" con il colore desiderato)
+        .attr("stroke-width", 2) // Larghezza della linea (puoi cambiare "2" con la larghezza desiderata)
+        .style("display", d => d.data.Livelli[i]>0? "block" : "none");
+    }
+    for (let i = 0; i < numLevel; i++) {
+        const centerY = levelHeights[i];
+        svg2.append("text")
         .attr("x", root.x0 - 10) // Posizione X a sinistra della linea
         .attr("y", centerY) // Posizione Y centrata
         .attr("text-anchor", "end") // Allinea il testo a destra
         .text(i); // Testo con il valore del livello
-}
+    }
+
+
 /*
-const levelHeights = [];
-for (let i = numLevel; i >= 1; i--) {
-    const centerY = 0.5 * smallest_rect_height + 5 * (maxHeight + 1) + (smallest_rect_height + 10 * (maxHeight + 1)) * i + 1;
-    levelHeights.push(centerY);
-}
 // Aggiungi linee orizzontali per ogni livello dei nodi
 for (let i = numLevel - 1; i >= 0; i--) {
     const centerY = levelHeights[i];
