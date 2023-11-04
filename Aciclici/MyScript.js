@@ -1,6 +1,24 @@
 // Parse the Data
 function getData(jsonFile, callBack){d3.json(jsonFile).then(data => callBack(data))}
 
+function calcolaMaxLevel(jsonData) {
+    let maxLevel = 0;
+
+    function ricercaMaxLevel(jsonNode) {
+        if (jsonNode.MaxLevel !== undefined) {
+            maxLevel = Math.max(maxLevel, jsonNode.MaxLevel);
+        }
+        if (jsonNode.children && Array.isArray(jsonNode.children)) {
+            for (const child of jsonNode.children) {
+                ricercaMaxLevel(child);
+            }
+        }
+    }
+
+    ricercaMaxLevel(jsonData);
+    return maxLevel;
+}
+
 // Add information about height and depth of nodes in the tree data structure
 function compute_height_depth(node, depth){
     node.depth = depth
@@ -174,7 +192,9 @@ function charts(data, planeData, containerID){
     padding_top = 5
     padding_bottom = 5
     smallest_rect_height = 20
-    const numLevel = 6;
+    var numLevel = calcolaMaxLevel(data)+1;
+    console.log("numero dei livelli: ");
+    console.log(numLevel);
     treemapHeight = ((data.height+1)*(padding_top + padding_bottom) + smallest_rect_height)*(numLevel)
     var svg2 = d3.select(containerID).append("svg")
                     .attr("id", "treemap")
@@ -205,7 +225,7 @@ function charts(data, planeData, containerID){
     root.eachAfter(function(d){
         levels= d.data.MaxLevel-d.data.MinLevel-1;
         d.y0=(smallest_rect_height+10*(maxHeight+1))*(d.data.MinLevel)+5*d.depth;
-        d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*2+10*(d.data.MaxLevel-d.data.MinLevel)+(smallest_rect_height+10*maxHeight)*levels+11.5*d.depth;
+        d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*2+10*(d.data.MaxLevel-d.data.MinLevel)+(smallest_rect_height+10*maxHeight)*levels+12*d.depth;
         
         //d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*(d.data.MaxLevel-d.data.MinLevel+1)+10*(d.data.MaxLevel-d.data.MinLevel);
         //d.y1=d.data.MaxLevel*smallest_rect_height+((d.data.MaxLevel-d.data.MinLevel)+2)*10*(maxHeight-d.depth);
@@ -215,7 +235,6 @@ function charts(data, planeData, containerID){
             if(max > d.x1)
             d.x1 = max+4*xScale.padding()
         }
-      
     });
     const node = svg2.selectAll("g")
         .data(d3.group(root, d => d.depth))
@@ -266,19 +285,8 @@ function charts(data, planeData, containerID){
         .attr("stroke-width", 2) // Larghezza della linea (puoi cambiare "2" con la larghezza desiderata)
         .style("display", d => d.data.Livelli[i]>0? "block" : "none");
     }
-    /*
-    //aggiunte intestazioni per le linee dei livelli
-    for (let i = 0; i < numLevel; i++) {
-        const centerY = levelHeights[i];
-        svg2.append("text")
-        .attr("x", root.x0 - 10) // Posizione X a sinistra della linea
-        .attr("y", centerY-3) // Posizione Y centrata
-        .attr("text-anchor", "end") // Allinea il testo a destra
-        .text(i); // Testo con il valore del livello
-    }
-    */
     //aggiunte linee ai bordi dei rettangoli
-    for (let i = 0; i <= numLevel - 1; i++) {
+    for (let i = 0; i <numLevel ; i++) {
         const centerY = levelHeights[i];
         svg2.append("line")
             .attr("x1", root.x0-50) // Inizio della linea all'estremità sinistra del rettangolo radice
@@ -288,7 +296,7 @@ function charts(data, planeData, containerID){
             .attr("stroke", "black") // Colore delle linee
             .attr("stroke-width", 2); // Larghezza delle linee
     }
-    for (let i = 0; i <= numLevel - 1; i++) {
+    for (let i = 0; i < numLevel; i++) {
         const centerY = levelHeights[i];
         svg2.append("line")
             .attr("x1", root.x1) // Inizio della linea all'estremità sinistra del rettangolo radice

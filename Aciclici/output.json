@@ -1,116 +1,32 @@
-{
-	"Node": 0,
-	"Coreness": 0,
-	"NumeroNodi": 20,
-	"Livelli": [1,1,1,1,1,1],
-	"MinLevel": 0,
-	"MaxLevel": 5,
-	"NumeroArchi": 0,
-	"minCoreness": 0,
-	"maxCoreness": 0,
-	"children": [
-	  {
-		"Node": 2001,
-		"Coreness": 2,
-		"minCoreness": 1,
-		"maxCoreness": 2,
-		"NumeroNodi": 7,
-		"Livelli": [0,1,1,1,1,1],
-		"MinLevel": 1,
-		"MaxLevel": 5,
-		"NumeroArchi": 0,
-		"children": [
-		  {
-			"Node": 3003,
-			"Coreness": 3,
-			"minCoreness": 3,
-			"maxCoreness": 3,
-			"NumeroNodi": 5,
-			"Livelli": [0,0,1,1,0,1],
-			"MinLevel": 2,
-			"MaxLevel": 5,
-			"NumeroArchi": 0,
-			"children": []
-		  }
-		]
-	  },
-	  {
-		"Node": 4004,
-		"Coreness": 2,
-		"minCoreness": 1,
-		"maxCoreness": 2,
-		"NumeroNodi": 13,
-		"Livelli": [1,1,1,1,1,0],
-		"MinLevel": 0,
-		"MaxLevel": 4,
-		"NumeroArchi": 0,
-		"children": [
-		  {
-			"Node": 5005,
-			"Coreness": 3,
-			"minCoreness": 3,
-			"maxCoreness": 3,
-			"NumeroNodi": 10,
-			"Livelli": [1,1,1,1,1,0],
-			"MinLevel": 0,
-			"MaxLevel": 4,
-			"NumeroArchi": 0,
-			"children": [
-			  {
-				"Node": 6006,
-				"Coreness": 4,
-				"minCoreness": 4,
-				"maxCoreness": 4,
-				"NumeroNodi": 8,
-				"Livelli": [0,1,1,1,1,0],
-				"MinLevel": 1,
-				"MaxLevel": 4,
-				"NumeroArchi": 0,
-				"children": [
-				  {
-					"Node": 7007,
-					"Coreness": 5,
-					"minCoreness": 5,
-					"maxCoreness": 5,
-					"NumeroNodi": 7,
-					"Livelli": [0,1,1,1,0,0],
-					"MinLevel": 1,
-					"MaxLevel": 3,
-					"NumeroArchi": 0,
-					"children": [
-					  {
-						"Node": 8008,
-						"Coreness": 6,
-						"minCoreness": 6,
-						"maxCoreness": 6,
-						"NumeroNodi": 5,
-						"Livelli": [0,1,1,0,0,0],
-						"MinLevel": 1,
-						"MaxLevel": 2,
-						"NumeroArchi": 0,
-						"children": [
-						  {
-							"Node": 9009,
-							"Coreness": 7,
-							"minCoreness": 7,
-							"maxCoreness": 7,
-							"NumeroNodi": 2,
-							"Livelli": [0,1,1,0,0,0],
-							"MinLevel": 1,
-							"MaxLevel": 2,
-							"NumeroArchi": 0,
-							"children": []
-						  }
-						]
-					  }
-					]
-				  }
-				]
-			  }
-			]
-		  }
-		]
-	  }
-	]
-  }
-  
+{"Node": 0,
+"Coreness": 0,
+"NumeroNodi": 17,
+ "Livelli": [1, 3, 3, 3, 3, 2, 1, 1],
+ "MinLevel": 0,
+ "MaxLevel": 7,
+"NumeroArchi": 0,
+"minCoreness": 0,
+"maxCoreness": 0,
+"children": [
+	{"Node": 2001,
+	 "Coreness": 2,
+	 "minCoreness":  1,
+	 "maxCoreness": 2,
+	 "NumeroNodi": 17,
+	 "Livelli": [1, 3, 3, 3, 3, 2, 1, 1],
+	 "MinLevel": 0,
+	 "MaxLevel": 7,
+	 "NumeroArchi": 0,
+	 "children": [
+		{"Node": 3001,
+		 "Coreness": 3,
+		 "minCoreness":  3,
+		 "maxCoreness": 3,
+		 "NumeroNodi": 5,
+		 "Livelli": [1, 1, 1, 1, 1, 0, 0, 0],
+		 "MinLevel": 0,
+		 "MaxLevel": 4,
+		 "NumeroArchi": 0,
+		 "children": [
+		 ]}	 ]} ]
+}
