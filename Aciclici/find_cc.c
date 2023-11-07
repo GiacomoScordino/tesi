@@ -23,6 +23,8 @@ typedef struct node_tree_struct
     int levelsize;
     int e_tm_numerousness;
     int depth;
+    int num_figli;
+    int** levelKnowledge;
     struct node_tree_struct *child;
     struct node_tree_struct *last_child;
     struct node_tree_struct *sibling;
@@ -1522,6 +1524,79 @@ void writeTabs(FILE *fp, int count)
         fprintf(fp, "\t");
     }
 }
+
+
+
+void printmatrix(int **matrix, int rows, int cols){
+    rows++;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            printf("%d ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+    printf("----------------------------------------------------------\n");
+}
+
+
+
+
+char* json_matrix(int **matrix, int rows, int cols) {
+    rows++;
+    char *jsonString = NULL;
+    char *rowString = NULL;
+
+    // Allocazione di memoria per la stringa risultante
+    int initialSize = 1000; // Dimensione iniziale
+    int currentSize = initialSize;
+    jsonString = (char *)malloc(initialSize * sizeof(char));
+
+    if (jsonString == NULL) {
+        fprintf(stderr, "Errore di allocazione di memoria.");
+        return NULL;
+    }
+
+    // Inizializzazione della stringa JSON con la parentesi di apertura dell'array
+    strcpy(jsonString, "[\n");
+
+    // Iterazione attraverso le righe e colonne della matrice
+    for (int i = 0; i < rows; i++) {
+        rowString = (char *)malloc(100 * sizeof(char)); // Dimensione approssimativa per ogni riga
+        if (rowString == NULL) {
+            fprintf(stderr, "Errore di allocazione di memoria.");
+            free(jsonString);
+            return NULL;
+        }
+
+        // Costruzione della stringa per una riga
+        int charsWritten = 0;
+        for (int j = 0; j < cols; j++) {
+            charsWritten += snprintf(rowString + charsWritten, 100 - charsWritten, "%d", matrix[i][j]);
+            if (j < cols - 1) {
+                charsWritten += snprintf(rowString + charsWritten, 100 - charsWritten, ", ");
+            }
+        }
+
+        // Aggiunta della riga alla stringa JSON
+        strcat(jsonString, "  [");
+        strcat(jsonString, rowString);
+        strcat(jsonString, "]");
+        if (i < rows - 1) {
+            strcat(jsonString, ",");
+        }
+        strcat(jsonString, "\n");
+
+        free(rowString);
+    }
+
+    // Aggiunta della parentesi di chiusura dell'array
+    strcat(jsonString, "]");
+
+    return jsonString;
+}
+
+
+
 char* json_array (node_tree *root){
     int length=root->levelsize;
     int* a=root->level_numerousness;
@@ -1559,6 +1634,9 @@ void write(node_tree *node, int level, FILE *fp)
         writeTabs(fp, level);
         fprintf(fp, " \"Livelli\": %s,\n", json_array(node));
         writeTabs(fp, level);
+        //fprintf(fp, " \"LevelMatrix\": %s,\n", json_matrix(node->levelKnowledge, node->num_figli,node->levelsize));
+        //writeTabs(fp, level);
+        printmatrix(node->levelKnowledge, node->num_figli,node->levelsize);
         fprintf(fp, " \"MinLevel\": %d,\n", node->minLevel);
         writeTabs(fp, level);
         fprintf(fp, " \"MaxLevel\": %d,\n", node->maxLevel);
@@ -1588,6 +1666,8 @@ void json_tree_recursive(node_tree *root, int level, FILE *fp)
     fprintf(fp, "\"Root\": %d,\n", root->id);
     fprintf(fp, " \"NumeroNodi\": %d,\n", root->n_tm_numerousness);
     fprintf(fp, " \"Livelli\": %s,\n", json_array(root));
+    //fprintf(fp, " \"LevelMatrix\": %s,\n", json_matrix(root->levelKnowledge, root->num_figli,root->levelsize));
+    printmatrix(root->levelKnowledge, root->num_figli,root->levelsize);
     fprintf(fp, " \"MinLevel\": %d,\n", root->minLevel);
     fprintf(fp, " \"MaxLevel\": %d,\n", root->maxLevel);
     fprintf(fp, " \"NumeroArchi\": %d,\n", 0); // oppure grafo->num_edges
@@ -1641,6 +1721,9 @@ void write_cc(node_tree *node, int level, FILE *fp)
         writeTabs(fp, level);
         fprintf(fp, " \"Livelli\": %s,\n", json_array(node));
         writeTabs(fp, level);
+       // fprintf(fp, " \"LevelMatrix\": %s,\n", json_matrix(node->levelKnowledge, node->num_figli,node->levelsize));
+        //writeTabs(fp, level);
+        printmatrix(node->levelKnowledge, node->num_figli,node->levelsize);
         fprintf(fp, " \"MinLevel\": %d,\n", node->minLevel);
         writeTabs(fp, level);
         fprintf(fp, " \"MaxLevel\": %d,\n", node->maxLevel);
@@ -1675,8 +1758,9 @@ void json_tree_recursive_cc(node_tree *root, int level, FILE *fp)
     // fprintf(fp," \"NumeroNodi\": %d,\n", grafo->num_vertices);
     // fprintf(fp," \"NumeroArchi\": %d,\n", grafo->num_edges);
     fprintf(fp, "\"NumeroNodi\": %d,\n", root->n_tm_numerousness);
-    printf("\n dajeeeeee: %s\n",json_array(root));
     fprintf(fp, " \"Livelli\": %s,\n", json_array(root));
+    //fprintf(fp, " \"LevelMatrix\": %s,\n", json_matrix(root->levelKnowledge, root->num_figli,root->levelsize));
+    printmatrix(root->levelKnowledge, root->num_figli,root->levelsize);
     fprintf(fp, " \"MinLevel\": %d,\n", root->minLevel);
     fprintf(fp, " \"MaxLevel\": %d,\n", root->maxLevel);
     // if(root->n_tm_numerousness < 0) printf("%d\n", root->id);
@@ -2326,7 +2410,47 @@ void compute_layers(graph *g){
         }
     }
 }
+void calculate_first_row_lk(node_tree* nodo){
 
+
+    for(int i=0;i<nodo->levelsize;i++){
+        printf("ciao come stai4\n");
+        if(nodo->level_numerousness[i]==0 && i>nodo->minLevel && i<nodo->maxLevel)
+            nodo->levelKnowledge[0][i]=i;
+        else
+            nodo->levelKnowledge[0][i]=0;
+
+    }
+}
+
+void calculate_levelKonwledge(node_tree* nodo){
+    int num_figli=0;
+    if(nodo->child!=NULL){
+        node_tree* child=nodo->child;
+        while(child!=NULL){
+        printf("ciao come stai1\n");
+            num_figli++;
+            child=child->sibling;
+        }
+    }
+    nodo->num_figli=num_figli;
+    nodo->levelKnowledge = (int**)malloc(nodo->levelsize * sizeof(int*));
+
+    for (int i = 0; i < ((nodo->levelsize)); i++) {
+        printf("ciao come stai2\n");
+        nodo->levelKnowledge[i] = (int*)malloc((num_figli+1) * sizeof(int));
+    }
+    calculate_first_row_lk(nodo);
+    if(nodo->child!=NULL){
+        for (int i=1; i<=num_figli;i++){
+            printf("ciao come stai3\n");
+            node_tree* child=nodo->child;
+            calculate_levelKonwledge(child);
+            nodo->levelKnowledge[i]=child->levelKnowledge[0];
+            child=child->sibling;
+        }
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -2393,6 +2517,8 @@ int main(int argc, char **argv)
     //printf("Fine sistemazione output tree in %f s\n", diff_sec);
 
     calculate_node_numerousness(graph_input);
+    //   calculate_levelKonwledge(root);
+       printf("ho finito\n");
     //QueryPerformanceCounter(&t8);
     //diff_sec = (t8.QuadPart - t7.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine calcolo numerosita' nodi in %f s\n", diff_sec);
@@ -2406,6 +2532,6 @@ int main(int argc, char **argv)
     printf("\nTempo totale: %f s\n", diff_sec);
 
     primitive(graph_input, root, input_file);
-
+ 
     return 0;
 }
