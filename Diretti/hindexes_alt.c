@@ -201,9 +201,13 @@ int update_h_out(graph* grafo,int k){
     int temp;
     lista[0]=-1;
     quicksortDesc(lista, 1, num_neighbors - 1);
+    if(grafo->vertices[k].outdegree!=0){
     printf("lista_h_out:[%d", lista[1]);
-    for(int i=2;i<num_neighbors;i++){
-        printf(", %d", lista[i]);
+        for(int i=2;i<num_neighbors;i++){
+            printf(", %d", lista[i]);
+        }
+    }else{
+       printf("lista_h_out:[ ");
     }
     printf("]\n");
     int max_i = 0;
@@ -228,9 +232,13 @@ int update_h_in(graph* grafo,int k){
     int temp;
     lista[0]=-1;
     quicksortDesc(lista, 1, num_neighbors - 1); 
-    printf("lista_h_in:[%d", lista[1]);
-    for(int i=2;i<num_neighbors;i++){
-        printf(", %d", lista[i]);
+    if(grafo->vertices[k].indegree!=0){
+        printf("lista_h_in:[%d", lista[1]);
+        for(int i=2;i<num_neighbors;i++){
+            printf(", %d", lista[i]);
+        }
+    }else{
+        printf("lista_h_in:[ ");
     }
     printf("]\n");
     int max_i = 0;
@@ -261,7 +269,7 @@ void compute_H_indexes(graph *grafo){
         converged=1;
         
         for(int i=1; i<=grafo->num_vertices;i++){
-            if(grafo->vertices[i].h_in!=grafo->vertices[i].new_h_in && grafo->vertices[i].h_out!=grafo->vertices[i].new_h_out){
+            if(grafo->vertices[i].h_in!=grafo->vertices[i].new_h_in || grafo->vertices[i].h_out!=grafo->vertices[i].new_h_out){
                 converged=0;
                 printf("il vertice %d non rispetta la condizione di convergenza\n",i);
             }
