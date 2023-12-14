@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#define V 3600000
-#define E 9100000
+#define V 360
+#define E 910
 // 68,349,466 &  1,811,849,342
 
 // struttura di input
@@ -20,6 +20,8 @@ typedef struct vertex_struct
     int id;
     int indegree;
     int outdegree;
+    int coreness_in;
+    int coreness_out;
     int h_in;
     int h_out;
     int new_h_in;
@@ -183,18 +185,18 @@ int update_h_out(graph* grafo,int k){
             }
         }
     }
-    printf("lista_h_out:[%d", lista[1]);
+    // printf("lista_h_out:[%d", lista[1]);
     for(int i=2;i<num_neighbors;i++){
-        printf(", %d", lista[i]);
+        // printf(", %d", lista[i]);
     }
-    printf("]\n");
+    // printf("]\n");
     int max_i = 0;
     for (int i = 1; i < num_neighbors; i++) {
         if (lista[i] >= i) {
             max_i = i;
         }
     }
-    printf("current h_out: %d\n", max_i);
+   //  printf("current h_out: %d\n", max_i);
     free(lista);
     free(current);
     return max_i;
@@ -218,18 +220,18 @@ int update_h_in(graph* grafo,int k){
             }
         }
     }
-    printf("lista_h_in:[%d", lista[1]);
+    // printf("lista_h_in:[%d", lista[1]);
     for(int i=2;i<num_neighbors;i++){
-        printf(", %d", lista[i]);
+      //   printf(", %d", lista[i]);
     }
-    printf("]\n");
+   //  printf("]\n");
     int max_i = 0;
     for (int i = 1; i < num_neighbors; i++) {
         if (lista[i] >= i) {
             max_i = i;
         }
     }
-    printf("current h_in: %d\n", max_i);
+    // printf("current h_in: %d\n", max_i);
     free(lista);
     free(current);
     return max_i;
@@ -238,13 +240,13 @@ void compute_H_indexes(graph *grafo){
     int converged=0;
     int count=1;
     while (converged==0){
-        printf("\n-------iterazione %d-------\n",count);
+        //printf("\n-------iterazione %d-------\n",count);
         count++;
         for(int i=1; i<=grafo->num_vertices;i++){
-            printf("\nVertice %d\n", i);
-            printf("vecchio h_in: %d\n",grafo->vertices[i].h_in);
+            //printf("\nVertice %d\n", i);
+           // printf("vecchio h_in: %d\n",grafo->vertices[i].h_in);
             grafo->vertices[i].new_h_in = update_h_in(grafo, i);
-            printf("vecchio h_out: %d\n",grafo->vertices[i].h_out);
+        // printf("vecchio h_out: %d\n",grafo->vertices[i].h_out);
             grafo->vertices[i].new_h_out = update_h_out(grafo, i);
             
         }
@@ -253,13 +255,121 @@ void compute_H_indexes(graph *grafo){
         for(int i=1; i<=grafo->num_vertices;i++){
             if(grafo->vertices[i].h_in!=grafo->vertices[i].new_h_in && grafo->vertices[i].h_out!=grafo->vertices[i].new_h_out){
                 converged=0;
-                printf("il vertice %d non rispetta la condizione di convergenza\n",i);
+                // printf("il vertice %d non rispetta la condizione di convergenza\n",i);
             }
             grafo->vertices[i].h_in=grafo->vertices[i].new_h_in;
             grafo->vertices[i].h_out=grafo->vertices[i].new_h_out;
         } 
     }
-    printf("\ntutti i vertici rispettano la condizione di convergenza\n");
+    // printf("\ntutti i vertici rispettano la condizione di convergenza\n");
+}
+void compute_coreness(graph *grafo)
+{
+
+    int n = grafo->num_vertices;
+    int md = 0;
+    int d,d_in,d_out, i, start, num;
+    int v, u, w, du, pu, pw;
+
+    int *deg = malloc(sizeof(int) * (2*n + 1));
+    // int* bin = malloc(sizeof(int) * (n+1));
+    int *bin = calloc(n + 1, sizeof(int));
+    int *pos = malloc(sizeof(int) * (2*n + 1));
+    int *vert = malloc(sizeof(int) * (2*n + 1));
+
+    if (deg == NULL || bin == NULL || pos == NULL || vert == NULL)
+    {
+        printf("malloc compute_coreness fallito\n");
+        exit(1);
+    }
+
+    for (v = 1; v <= n; v++)
+    {
+        // printf("%d\n", v);
+        vertex vertice = grafo->vertices[v];
+        d_in = vertice.indegree;
+        d_out = vertice.outdegree;
+
+        deg[v] = d_in;
+        deg[v+n] = d_out;
+
+        if (d_in > md)
+            md = d_in;
+        if (d_out > md)
+            md = d_out;
+        bin[deg[v]]++;
+        bin[deg[v+n]]++;
+    }
+    start = 1;
+    for (d = 0; d <= md; d++)
+    {
+        num = bin[d];
+        bin[d] = start;
+        start += num;
+    }
+
+    for (v = 1; v <= 2*n; v++)
+    {
+        pos[v] = bin[deg[v]];
+        vert[pos[v]] = v;
+        bin[deg[v]]++;
+    }
+    for (d = md; d >= 0; d--)
+    {
+        bin[d] = bin[d - 1];
+    }
+    bin[0] = 1;
+    int num_vert = 0;
+    for (i = 1; i <= 2*n; i++)
+    {
+        num_vert++;
+        v = vert[i];
+        if (v>n && grafo->vertices[v-n].id != 0 || v<=n && grafo->vertices[v].id != 0)
+        {
+            vicino *vi;
+            if(v<=n)
+                vi = grafo->vertices[v].primo_vicino_out;
+            else
+                vi = grafo->vertices[v-n].primo_vicino_in;  
+            while (vi!=NULL)
+            {
+                vertex vic = grafo->vertices[vi->id];
+                if(v<=n)
+                    u = vic.id;
+                else 
+                    u = vic.id + n;
+                if (deg[u] > deg[v])
+                {
+                    du = deg[u];
+                    pu = pos[u];
+                    pw = bin[du];
+                    w = vert[pw];
+
+                    if (u != w)
+                    {
+                        pos[u] = pw;
+                        vert[pu] = w;
+                        pos[w] = pu;
+                        vert[pw] = u;
+                    }
+                    bin[du]++;
+                    deg[u]--;
+                    
+                }
+
+                vi = vi->next;
+            }
+        }
+        if (v<=n){
+            grafo->vertices[v].coreness_in = deg[v];
+        }else{
+            grafo->vertices[v-n].coreness_out = deg[v];
+        }
+    }
+    free(vert);
+    free(pos);
+    free(bin);
+    free(deg);
 }
 
 int main(int argc, char **argv)
@@ -272,44 +382,19 @@ int main(int argc, char **argv)
 
     char *input_file = argv[1];
 
-    LARGE_INTEGER frequency;                          // ticks per second
-    LARGE_INTEGER t1, t9; //t2, t3, t4, t5, t6, t7, t8, t9; // ticks
-    double diff_sec;
-
     graph *graph_input = set_input(input_file);
-    for (int i=1;i<=graph_input->num_vertices;i++){
-        printf("il vertice %d ha h_in di ordine 0 = %d\n", i,  graph_input->vertices[i].h_in);
-        printf("il vertice %d ha h_out di ordine 0 = %d\n", i,  graph_input->vertices[i].h_out);
-        printf("\n");
-    }
-    compute_H_indexes(graph_input);
-
-    printf("\nRISULTATO FINALE\n");
-    for (int i=1;i<=graph_input->num_vertices;i++){
-        printf("il vertice %d ha coreness_in %d\n", i,  graph_input->vertices[i].new_h_in);
-        printf("il vertice %d ha coreness_out %d\n", i,  graph_input->vertices[i].new_h_out);
-        printf("\n");
-    }
+    printf("fatto set_input\n");
    
-
-/*
-    for(int i=1; i< graph_input->num_vertices;i++){
-        printf("il vertice corrente con id %d\n", graph_input->vertices[i].id);
-        printf("    ha i seguenti vicini_in: ");
-        vicino* vicino_in=graph_input->vertices[i].primo_vicino_in;
-        while(vicino_in!=NULL){
-            printf("%d ", vicino_in->id);
-            vicino_in=vicino_in->next;
-        }
+    //compute_H_indexes(graph_input);
+    compute_coreness(graph_input);
+    printf("\nRISULTATO FINALE\n");
+    
+    for (int i=1;i<=graph_input->num_vertices;i++){
+        //printf("il vertice %d ha hindex_in %d\n", i,  graph_input->vertices[i].new_h_in);
+        //printf("il vertice %d ha hindex_out %d\n", i,  graph_input->vertices[i].new_h_out);
+        printf("il vertice %d ha coreness in %d\n", i,  graph_input->vertices[i].coreness_in);
+        printf("il vertice %d ha coreness out %d\n", i,  graph_input->vertices[i].coreness_out);
         printf("\n");
-        printf("    ha i seguenti vicini_out: ");
-        vicino* vicino_out=graph_input->vertices[i].primo_vicino_out;
-        while(vicino_out!=NULL){
-            printf("%d ", vicino_out->id);
-            vicino_out=vicino_out->next;
-        }
-        printf("\n");
-    }
-*/    
+    }   
     return 0;
 }

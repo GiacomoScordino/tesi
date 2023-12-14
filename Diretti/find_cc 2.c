@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#define V 3600000
-#define E 9100000
+#define V 10000000 // 150000000
+#define E 100000000// 2000000000
 // 68,349,466 &  1,811,849,342
 
 // struttura di output
@@ -169,7 +169,7 @@ graph *set_input(char *input_path)
                         v_end->degree = 1;
                         v_end->indegree=1;
                     }
-                    //printf("il nodo %d ha indegree %d\n", v_end->id,v_end->indegree);
+                    printf("il nodo %d ha indegree %d\n", v_end->id,v_end->indegree);
                     vicino *vic = (vicino *)malloc(sizeof(vicino));
                     vicino *vic2 = (vicino *)malloc(sizeof(vicino));
                     if (vic == NULL || vic2 == NULL)
@@ -215,11 +215,11 @@ void compute_coreness(graph *grafo)
     int d, i, start, num;
     int v, u, w, du, pu, pw;
 
-    int *deg = malloc(sizeof(int) * (n + 1));
+    int *deg = malloc(sizeof(int) * (2*n + 1));
     // int* bin = malloc(sizeof(int) * (n+1));
     int *bin = calloc(n + 1, sizeof(int));
-    int *pos = malloc(sizeof(int) * (n + 1));
-    int *vert = malloc(sizeof(int) * (n + 1));
+    int *pos = malloc(sizeof(int) * (2*n + 1));
+    int *vert = malloc(sizeof(int) * (2*n + 1));
 
     if (deg == NULL || bin == NULL || pos == NULL || vert == NULL)
     {
@@ -231,12 +231,18 @@ void compute_coreness(graph *grafo)
     {
         // printf("%d\n", v);
         vertex vertice = grafo->vertices[v];
-        d = vertice.degree;
+        din = vertice.indegree;
+        dout = vertice.outdegree;
 
-        deg[v] = d;
-        if (d > md)
-            md = d;
+        deg[v] = din;
+        deg[v+n] = dout;
+
+        if (din > md)
+            md = din;
+        if (dout > md)
+            md = dout;
         bin[deg[v]]++;
+        bin[deg[v+n]]++;
     }
     /*
         for(d=0; d<=md; d++){
@@ -255,12 +261,12 @@ void compute_coreness(graph *grafo)
         start += num;
     }
 
-    for (v = 1; v <= n; v++)
+    for (v = 1; v <= 2*n; v++)
     {
         pos[v] = bin[deg[v]];
         vert[pos[v]] = v;
         bin[deg[v]]++;
-        deg[v] = grafo->vertices[v].degree;
+        //deg[v] = grafo->vertices[v].degree;
     }
 
     for (d = md; d >= 0; d--)
@@ -281,20 +287,26 @@ void compute_coreness(graph *grafo)
     // start timer
     // QueryPerformanceCounter(&t1);
 
-    for (i = 1; i <= n; i++)
+    for (i = 1; i <= 2*n; i++)
     {
         num_vert++;
         v = vert[i];
 
-        if (grafo->vertices[v].id != 0)
+        if (v>n && grafo->vertices[v-n].id != 0 || v<=n && grafo->vertices[v].id != 0)
         {
-
-            vicino *vi = grafo->vertices[v].primo_vicino;
-            for (int j = 0; j < grafo->vertices[v].degree; j++)
+            if(v<=n)
+                vicino *vi = grafo->vertices[v].primo_vicino_in;
+            else
+                vicino *vi = grafo->vertices[v-n].primo_vicino_out;
+               
+            while (vi)
             {
 
                 vertex vic = grafo->vertices[vi->id];
-                u = vic.id;
+                if(v<=n)
+                    u = vic.id;
+                else 
+                    u = vic.id + n;
                 // printf("\t vicino %d\n", vic->id);
 
                 if (deg[u] > deg[v])
@@ -336,7 +348,10 @@ void compute_coreness(graph *grafo)
         }*/
         /*printf("Nodo: %d \t", v);
         printf("Coreness: %d\n", deg[v]);*/
-        grafo->vertices[v].coreness = deg[v];
+        if (v<=n)
+            grafo->vertices[v].coreness_in = deg[v];
+        else
+            grafo->vertices[v-n].coreness_out = deg[v];
     }
     free(vert);
     free(pos);
@@ -445,7 +460,7 @@ void ordina_archi(graph *grafo)
 
 void makeSetLeaf(vertex *v, int max)
 {
-    
+    printf("il massimo e': %d\n", max);
     // crea set Disjoint-set: makeset(vrt)
     // node_ds* n_ds = (node_ds*)malloc(sizeof(node_ds));
     node_ds *n_ds = (node_ds *)calloc(1, sizeof(node_ds));
@@ -900,16 +915,12 @@ void sistema(node_tree *root, int len)
     int size = len * 2;
     node_tree **temp = malloc(sizeof(node_tree) * size);
     node_tree **array = malloc(sizeof(node_tree) * len);
-    
-    if (temp == NULL )
+
+    if (temp == NULL || array == NULL)
     {
-        printf("malloc sistema fallito temp \n");
+        printf("malloc sistema fallito\n");
     }
-    
-    if (array == NULL)
-    {
-        printf("malloc sistema fallito array \n");
-    }
+
     int len_t = 0;
     int len_a = 0;
     int i = 0;
@@ -2225,13 +2236,11 @@ void calculate_node_numerousness(graph *grafo)
         int level= grafo->vertices[i].level;
         if (n->id != 0)
         {
-            n->parent->n_tm_numerousness += 1;
-            
             while (n->parent != NULL)
             {
-                n->parent->n_numerousness += 1;
+                n->parent->n_tm_numerousness += 1;
                 n->parent->level_numerousness[level]+=1;
-                //printf("il parent %d al livello %d ha %d nodi\n",n->parent->id,level,n->parent->level_numerousness[level]);
+                printf("il parent %d al livello %d ha %d nodi\n",n->parent->id,level,n->parent->level_numerousness[level]);
                 if(n->parent->minLevel>level || n->parent->minLevel==-1)
                     n->parent->minLevel=level;
                 if(n->parent->maxLevel<level|| n->parent->maxLevel==-1) 
@@ -2277,8 +2286,7 @@ void calculate_depth(graph *grafo)
 
 void compute_layers(graph *g){
     // Crea una coda per l'ordinamento topologico
-    int *queue = calloc(g->num_vertices, sizeof(int));
-    printf("inizializzata la coda\n");
+    int queue[g->num_vertices];
     int front = 0, rear = 0;
     //int level = 0;
 
@@ -2287,7 +2295,7 @@ void compute_layers(graph *g){
         if (g->vertices[i].indegree == 0) {
             queue[rear++] = i;
             g->vertices[i].level = 0;
-            //printf("il nodo corrente con indegree 0 e' il %d\n", i);
+            printf("il nodo corrente con indegree 0 e' il %d\n", i);
         }
     }
 
@@ -2309,30 +2317,29 @@ void compute_layers(graph *g){
             neighbor = neighbor->next;
         }
     }
-    free(queue);
 }
 
 void initLevelArrays(graph *grafo){
 
     for (int i = 1; i <= grafo->num_vertices; i++){
-        if(i%100000==0) printf("sono al vertice %d\n", i);
-        //printf("sto inizializzando il figlio %d\n",i);
+        printf("sto inizializzando il figlio %d\n",i);
         node_tree *n = grafo->vertices[i].v_tree;
         int num_level=n->levelsize;
-        //n->level_numerousness = calloc(num_level, sizeof(int));
+        n->level_numerousness=(int*)malloc(sizeof(int) * num_level);
+        for(int i=0; i<num_level;i++){
+                n->level_numerousness[i]=0;
+                printf("al livello %d ho %d nodi\n", i,n->level_numerousness[i] );
+        }
         while (n->parent != NULL){
-            //printf("sto inizializzando il genitore %d\n",n->parent->id);
+            printf("sto inizializzando il genitore %d\n",n->parent->id);
             n->parent->minLevel=-1;
             n->parent->maxLevel=-1;
-            if(n->parent->level_numerousness==NULL){
-                n->parent->levelsize=num_level;
-                n->parent->level_numerousness=calloc(num_level, sizeof(int));
-                if(n->parent->level_numerousness==NULL) {
-                    printf("calloc level numerouseness fallito\n");
-                    exit(1);
-                }
+            n->parent->levelsize=num_level;
+            n->parent->level_numerousness=(int*)malloc(sizeof(int) * num_level);
+            for(int i=0; i<num_level;i++){
+                n->parent->level_numerousness[i]=0;
+                printf("al livello %d ho %d nodi\n", i,n->parent->level_numerousness[i] );
             }
-            
             n=n->parent;
         }
     }
@@ -2401,7 +2408,6 @@ int main(int argc, char **argv)
     // leggi i dati da file e setta il grafo di input
     //printf("Inizio setting input\n");
     graph *graph_input = set_input(input_file);
-    printf("fatto set_input\n");
     //QueryPerformanceCounter(&t2);
     //diff_sec = (t2.QuadPart - t1.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine setting input in %f s\n", diff_sec);
@@ -2411,48 +2417,38 @@ int main(int argc, char **argv)
     int num_radice=0;
     */
     compute_layers(graph_input);
-    printf("fatto compute_layers\n");
     // funzione per calcolare la coreness dei nodi
     //printf("Inizio calcolo coreness\n");
     compute_coreness(graph_input);
-    printf("fatto compute_coreness\n");
     //QueryPerformanceCounter(&t3);
     //diff_sec = (t3.QuadPart - t2.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine calcolo coreness in %f s\n", diff_sec);
 
     // funzione per modificare   la lista degli archi del grafo in ordine decrescente di coreness
     ordina_archi(graph_input);
-    printf("fatto ordina_archi\n");
     //QueryPerformanceCounter(&t4);
     //diff_sec = (t4.QuadPart - t3.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine ordinamento archi in %f s\n", diff_sec);
 
     // funzione per creare le foglie dell'albero di output e le foglie della struttura di supporto
     init(graph_input);
-    printf("fatto init\n");
     //QueryPerformanceCounter(&t5);
     //diff_sec = (t5.QuadPart - t4.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine creazione foglie output tree e disjoint set in %f s\n", diff_sec);
 
     // costruzione dell'albero di output
     node_tree *root = build(graph_input);
-    printf("fatto build\n");
     //QueryPerformanceCounter(&t6);
     //printf("Inizio costruzione albero di output in %f s\n", diff_sec);
     //diff_sec = (t6.QuadPart - t5.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine costruzione albero di output in %f s\n", diff_sec);
+    initLevelArrays(graph_input);
     // sistema output tree per eliminare parentele "padre-figlio" con stessa coreness
-    printf("numero dei nodi: %d\n", graph_input->num_vertices);
     sistema(root, graph_input->num_vertices);
-    printf("fatto sistema\n");
     //QueryPerformanceCounter(&t7);
     //diff_sec = (t7.QuadPart - t6.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine sistemazione output tree in %f s\n", diff_sec);
-    initLevelArrays(graph_input);
-    printf("fatto initlevelarrays\n");
-    
     calculate_node_numerousness(graph_input);
-    printf("fatto calculate node numerouseness\n");
     // calculate_levelKonwledge(root);
     //QueryPerformanceCounter(&t8);
     //diff_sec = (t8.QuadPart - t7.QuadPart) / (double)frequency.QuadPart;

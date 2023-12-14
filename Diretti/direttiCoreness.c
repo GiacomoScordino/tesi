@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#define V 3600000
-#define E 9100000
+#define V 1000000   // 150000000
+#define E 10000000 // 2000000000
 // 68,349,466 &  1,811,849,342
 
 // struttura di output
@@ -15,16 +15,14 @@ typedef struct node_tree_struct
     int coreness;
     int range_c[2];
     int n_numerousness;
+    int n_numerousnessL;
+    int n_numerousnessR;
     int e_numerousness;
     int n_tm_numerousness;
-    int* level_numerousness;
-    int minLevel;
-    int maxLevel;
-    int levelsize;
+    int n_tm_numerousnessL;
+    int n_tm_numerousnessR;
     int e_tm_numerousness;
     int depth;
-    int num_figli;
-    //int** levelKnowledge;
     struct node_tree_struct *child;
     struct node_tree_struct *last_child;
     struct node_tree_struct *sibling;
@@ -55,19 +53,10 @@ typedef struct vertex_struct
     int id;
     int coreness;
     int degree;
-    int indegree;
-    int outdegree;
-    int level;
     node_tree *v_tree;
     vicino *primo_vicino;
+    char class;
 } vertex;
-
-typedef struct list_vertex_struct
-{
-    vertex* vertice;
-    struct list_vertex_struct* next;
-} list_vertex;
-
 
 typedef struct edge_struct
 {
@@ -80,6 +69,8 @@ typedef struct graph_struct
 {
     int num_edges;
     int num_vertices;
+    int num_verticesL;
+    int num_verticesR;
     int len_v;
     int len_e;
     edge *edges;
@@ -120,82 +111,93 @@ graph *set_input(char *input_path)
         grafo->edges = e_array;
 
         int len_list_edges = 0;
-        int len_list_vertex = 0;
+        int len_list_vertexL = 0;
+        int len_list_vertexR = 0;
         int c = 0;
         // int n = V;
         // int m = E;
+
         char line[1000];
+
         vertex *v_start, *v_end;
+
+       int contaLettura=0;
+       int verticiSinistra=0; 
         while (fgets(line, sizeof(line), file))
         {
+            if(contaLettura==1){
+                char x;
+                int y,h;
+                sscanf(line,"%c %d %d %d",&x,&y,&verticiSinistra,&h);
+            }
+            contaLettura++;
             int start, end;
             if (sscanf(line, "%d %d", &start, &end) == 2)
+            { 
+              end=end+verticiSinistra;
+              c++;
+              if (start > len_list_vertexL)
+              {
+                 len_list_vertexL = start;
+              }
+              if (end > len_list_vertexR)
+             {
+                  len_list_vertexR = end;
+             }
+
+              v_start = &(grafo->vertices[start]);
+              v_end = &(grafo->vertices[end]);
+
+            if (v_start->id !=0)
             {
-                if (start != end)
-                { // esegui la computazione solo se l'arco non è un loop
-                    c++;
-                    if (start > len_list_vertex)
-                    {
-                        len_list_vertex = start;
-                    }
-                    if (end > len_list_vertex)
-                    {
-                        len_list_vertex = end;
-                    }
+                v_start->degree++;
+            }
+            else
+            {
+                 v_start->id = start;
+                 v_start->degree = 1;
+                 v_start->class='l';
+            }
 
-                    v_start = &(grafo->vertices[start]);
-                    v_end = &(grafo->vertices[end]);
+            if (v_end->id != 0)
+            {
+                 v_end->degree++;
+            }
+            else
+            {
+                v_end->id = end;
+                v_end->degree = 1;
+                v_end->class='r';
+             }
 
-                    if (v_start->id != 0)
-                    {
-                        v_start->degree++;
-                        v_start->outdegree++;
-                    }
-                    else
-                    {
-                        v_start->id = start;
-                        v_start->degree = 1;
-                        v_start->outdegree=1;
-                    }
+            vicino *vic = (vicino *)malloc(sizeof(vicino));
+            vicino *vic2 = (vicino *)malloc(sizeof(vicino));
+            if (vic == NULL || vic2 == NULL)
+            {
+                printf("malloc vicino fallito\n");
+            }
 
-                    if (v_end->id != 0)
-                    {
-                        v_end->degree++;
-                        v_end->indegree++;
-                    }
-                    else
-                    {
-                        v_end->id = end;
-                        v_end->degree = 1;
-                        v_end->indegree=1;
-                    }
-                    //printf("il nodo %d ha indegree %d\n", v_end->id,v_end->indegree);
-                    vicino *vic = (vicino *)malloc(sizeof(vicino));
-                    vicino *vic2 = (vicino *)malloc(sizeof(vicino));
-                    if (vic == NULL || vic2 == NULL)
-                    {
-                        printf("malloc vicino fallito\n");
-                    }
+            vic->id = v_end->id;
+            vic->next = v_start->primo_vicino;
+            v_start->primo_vicino = vic;
 
-                    vic->id = v_end->id;
-                    vic->next = v_start->primo_vicino;
-                    v_start->primo_vicino = vic;
+            vic2->id = v_start->id;
+            vic2->next = v_end->primo_vicino;
+            v_end->primo_vicino = vic2;
 
-                    vic2->id = v_start->id;
-                    vic2->next = v_end->primo_vicino;
-                    v_end->primo_vicino = vic2;
+            grafo->edges[len_list_edges].a = v_start;
+            grafo->edges[len_list_edges].b = v_end;
 
-                    grafo->edges[len_list_edges].a = v_start;
-                    grafo->edges[len_list_edges].b = v_end;
+                len_list_edges++;
 
-                    len_list_edges++;
-
-                }
+                
             }
         }
         fclose(file);
         grafo->num_edges = len_list_edges;
-        grafo->num_vertices = len_list_vertex;
+        grafo->num_verticesL = len_list_vertexL;
+        grafo->num_verticesR = len_list_vertexR;
+        grafo->num_vertices = len_list_vertexR+len_list_vertexL;
         return grafo;
     }
     else
@@ -443,9 +445,9 @@ void ordina_archi(graph *grafo)
 
 //********************************************************CREA FOGLIE OUTPUTTREE E DS********************************************************//
 
-void makeSetLeaf(vertex *v, int max)
+void makeSetLeaf(vertex *v)
 {
-    
+
     // crea set Disjoint-set: makeset(vrt)
     // node_ds* n_ds = (node_ds*)malloc(sizeof(node_ds));
     node_ds *n_ds = (node_ds *)calloc(1, sizeof(node_ds));
@@ -469,9 +471,6 @@ void makeSetLeaf(vertex *v, int max)
     // n_tree->n_numerousness = 0;
     n_tree->coreness = v->coreness;
     // printf("-----------nodo albero: %d-----------------\n", n_tree->id);
-    n_tree->minLevel=-1;
-    n_tree->maxLevel=-1;
-    n_tree->levelsize=max+1;
 
     // crea un riferimento tra il vertice e la foglia dell'albero (serve per la find?)
     v->v_tree = n_tree;
@@ -480,17 +479,10 @@ void makeSetLeaf(vertex *v, int max)
 
 void init(graph *g)
 {
-    int max=-1;
+    // setta il grafo dato come input: per ogni nodo del grafo costruisci l'albero di output e la struttura di supporto
     for (int i = 1; i <= g->num_vertices; i++)
     {
-    
-        if(max==-1 || max < g->vertices[i].level){
-            max= g->vertices[i].level;
-        }
-    }
-    for (int i = 1; i <= g->num_vertices; i++)
-    {
-        makeSetLeaf(&(g->vertices[i]), max);
+        makeSetLeaf(&(g->vertices[i]));
     }
 }
 
@@ -900,16 +892,12 @@ void sistema(node_tree *root, int len)
     int size = len * 2;
     node_tree **temp = malloc(sizeof(node_tree) * size);
     node_tree **array = malloc(sizeof(node_tree) * len);
-    
-    if (temp == NULL )
+
+    if (temp == NULL || array == NULL)
     {
-        printf("malloc sistema fallito temp \n");
+        printf("malloc sistema fallito\n");
     }
-    
-    if (array == NULL)
-    {
-        printf("malloc sistema fallito array \n");
-    }
+
     int len_t = 0;
     int len_a = 0;
     int i = 0;
@@ -1538,19 +1526,6 @@ void write(node_tree *node, int level, FILE *fp)
         writeTabs(fp, level);
         fprintf(fp, " \"NumeroNodi\": %d,\n", node->n_tm_numerousness);
         writeTabs(fp, level);
-        fprintf(fp, " \"Livelli\": [");
-        if (node->levelsize > 0) {
-            fprintf(fp, " %d", node->level_numerousness[0]);
-            for (int i = 1; i < node->levelsize; i++) {
-                fprintf(fp, ", %d", node->level_numerousness[i]);
-            }
-        }
-        fprintf(fp, " ],\n");
-        writeTabs(fp, level);
-        fprintf(fp, " \"MinLevel\": %d,\n", node->minLevel);
-        writeTabs(fp, level);
-        fprintf(fp, " \"MaxLevel\": %d,\n", node->maxLevel);
-        writeTabs(fp, level);
         fprintf(fp, " \"NumeroArchi\": %d,\n", node->e_tm_numerousness);
 
         if (node->child != NULL)
@@ -1574,18 +1549,7 @@ void write(node_tree *node, int level, FILE *fp)
 void json_tree_recursive(node_tree *root, int level, FILE *fp)
 {
     fprintf(fp, "\"Root\": %d,\n", root->id);
-    fprintf(fp, " \"NumeroNodi\": %d,\n", root->n_tm_numerousness);
-    
-    fprintf(fp, " \"Livelli\": [");
-    if (root->levelsize > 0) {
-        fprintf(fp, " %d", root->level_numerousness[0]);
-        for (int i = 1; i < root->levelsize; i++) {
-            fprintf(fp, ", %d", root->level_numerousness[i]);
-        }
-    }
-    fprintf(fp, " ],\n");
-    fprintf(fp, " \"MinLevel\": %d,\n", root->minLevel);
-    fprintf(fp, " \"MaxLevel\": %d,\n", root->maxLevel);
+    fprintf(fp, " \"NumeroNodi\": %d,\n", 0);  // oppure grafo->num_vertices
     fprintf(fp, " \"NumeroArchi\": %d,\n", 0); // oppure grafo->num_edges
     fprintf(fp, "\"Children\": [\n");
     node_tree *child = root->child;
@@ -1635,18 +1599,10 @@ void write_cc(node_tree *node, int level, FILE *fp)
         writeTabs(fp, level);
         fprintf(fp, " \"NumeroNodi\": %d,\n", node->n_tm_numerousness);
         writeTabs(fp, level);
-        fprintf(fp, " \"Livelli\": [");
-        if (node->levelsize > 0) {
-            fprintf(fp, " %d", node->level_numerousness[0]);
-            for (int i = 1; i < node->levelsize; i++) {
-                fprintf(fp, ", %d", node->level_numerousness[i]);
-            }
-        }
-        fprintf(fp, " ],\n");
+        fprintf(fp, " \"NumeroNodiR\": %d,\n", node->n_tm_numerousnessR);
         writeTabs(fp, level);
-        fprintf(fp, " \"MinLevel\": %d,\n", node->minLevel);
-        writeTabs(fp, level);
-        fprintf(fp, " \"MaxLevel\": %d,\n", node->maxLevel);
+        fprintf(fp, " \"NumeroNodiL\": %d,\n", node->n_tm_numerousnessL);
+        // if(node->n_tm_numerousness < 0) printf("%d\n",node->id);
         writeTabs(fp, level);
         fprintf(fp, " \"NumeroArchi\": %d,\n", node->e_tm_numerousness);
         writeTabs(fp, level);
@@ -1678,19 +1634,8 @@ void json_tree_recursive_cc(node_tree *root, int level, FILE *fp)
     // fprintf(fp," \"NumeroNodi\": %d,\n", grafo->num_vertices);
     // fprintf(fp," \"NumeroArchi\": %d,\n", grafo->num_edges);
     fprintf(fp, "\"NumeroNodi\": %d,\n", root->n_tm_numerousness);
-    fprintf(fp, " \"Livelli\": [");
-        // Scrivi i valori dell'array root->level_numerousness
-        if (root->levelsize > 0) {
-            fprintf(fp, " %d", root->level_numerousness[0]);
-            for (int i = 1; i < root->levelsize; i++) {
-                fprintf(fp, ", %d", root->level_numerousness[i]);
-            }
-        }
-    fprintf(fp, " ],\n");
-    //fprintf(fp, " \"LevelMatrix\": %s,\n", json_matrix(root->levelKnowledge, root->num_figli,root->levelsize));
-    //printmatrix(root->levelKnowledge, root->num_figli,root->levelsize);
-    fprintf(fp, " \"MinLevel\": %d,\n", root->minLevel);
-    fprintf(fp, " \"MaxLevel\": %d,\n", root->maxLevel);
+    fprintf(fp, "\"NumeroNodiL\": %d,\n", root->n_tm_numerousnessL);
+    fprintf(fp, "\"NumeroNodiR\": %d,\n", root->n_tm_numerousnessR);
     // if(root->n_tm_numerousness < 0) printf("%d\n", root->id);
     fprintf(fp, "\"NumeroArchi\": 0,\n");
     fprintf(fp, "\"minCoreness\": 0,\n");
@@ -2222,20 +2167,23 @@ void calculate_node_numerousness(graph *grafo)
     for (int i = 1; i <= grafo->num_vertices; i++)
     {
         node_tree *n = grafo->vertices[i].v_tree;
-        int level= grafo->vertices[i].level;
+        char class=grafo->vertices[i].class;
         if (n->id != 0)
         {
             n->parent->n_tm_numerousness += 1;
-            
+            if(class=='l')
+                n->parent->n_tm_numerousnessL += 1;
+            else
+                n->parent->n_tm_numerousnessR += 1;
+           
+            // if(n->parent->n_tm_numerousness < 0 ) printf("id padre: %d,     id nodo: %d\n", n->parent->id, n->id);
             while (n->parent != NULL)
             {
                 n->parent->n_numerousness += 1;
-                n->parent->level_numerousness[level]+=1;
-                //printf("il parent %d al livello %d ha %d nodi\n",n->parent->id,level,n->parent->level_numerousness[level]);
-                if(n->parent->minLevel>level || n->parent->minLevel==-1)
-                    n->parent->minLevel=level;
-                if(n->parent->maxLevel<level|| n->parent->maxLevel==-1) 
-                    n->parent->maxLevel=level;
+                if(class=='l')
+                    n->parent->n_numerousnessL += 1;
+                else
+                    n->parent->n_numerousnessR += 1;
                 n = n->parent;
             }
         }
@@ -2275,109 +2223,6 @@ void calculate_depth(graph *grafo)
     }
 }
 
-void compute_layers(graph *g){
-    // Crea una coda per l'ordinamento topologico
-    int *queue = calloc(g->num_vertices, sizeof(int));
-    printf("inizializzata la coda\n");
-    int front = 0, rear = 0;
-    //int level = 0;
-
-    // Inserisci i vertici con grado di entrata 0 nella coda
-    for (int i = 1; i <= g->num_vertices; i++) {
-        if (g->vertices[i].indegree == 0) {
-            queue[rear++] = i;
-            g->vertices[i].level = 0;
-            //printf("il nodo corrente con indegree 0 e' il %d\n", i);
-        }
-    }
-
-    while (front < rear) {
-        int current_vertex_id = queue[front++];
-        //level++;
-        // Riduci il grado di entrata dei vicini e mettili nella coda se il loro indegree diventa 0
-        vicino *neighbor = g->vertices[current_vertex_id].primo_vicino;
-        
-        while (neighbor != NULL) {
-            int neighbor_id = neighbor->id;
-           
-            g->vertices[neighbor_id].indegree--;
-            if (g->vertices[neighbor_id].indegree == 0) {
-                queue[rear++] = neighbor_id;
-                g->vertices[neighbor_id].level = g->vertices[current_vertex_id].level+1;
-            }
-
-            neighbor = neighbor->next;
-        }
-    }
-    free(queue);
-}
-
-void initLevelArrays(graph *grafo){
-
-    for (int i = 1; i <= grafo->num_vertices; i++){
-        if(i%100000==0) printf("sono al vertice %d\n", i);
-        //printf("sto inizializzando il figlio %d\n",i);
-        node_tree *n = grafo->vertices[i].v_tree;
-        int num_level=n->levelsize;
-        //n->level_numerousness = calloc(num_level, sizeof(int));
-        while (n->parent != NULL){
-            //printf("sto inizializzando il genitore %d\n",n->parent->id);
-            n->parent->minLevel=-1;
-            n->parent->maxLevel=-1;
-            if(n->parent->level_numerousness==NULL){
-                n->parent->levelsize=num_level;
-                n->parent->level_numerousness=calloc(num_level, sizeof(int));
-                if(n->parent->level_numerousness==NULL) {
-                    printf("calloc level numerouseness fallito\n");
-                    exit(1);
-                }
-            }
-            
-            n=n->parent;
-        }
-    }
-}
-/*
-void calculate_first_row_lk(node_tree* nodo){
-    for(int i=0;i<nodo->levelsize;i++){
-        printf("ciao come stai4\n");
-        if(nodo->level_numerousness[i]==0 && i>nodo->minLevel && i<nodo->maxLevel)
-            nodo->levelKnowledge[0][i]=i;
-        else
-            nodo->levelKnowledge[0][i]=0;
-
-    }
-}
-
-void calculate_levelKonwledge(node_tree* nodo){
-    int num_figli=0;
-    if(nodo->child!=NULL){
-        node_tree* child=nodo->child;
-        while(child!=NULL){
-        printf("ciao come stai1\n");
-            num_figli++;
-            child=child->sibling;
-        }
-    }
-    nodo->num_figli=num_figli;
-    nodo->levelKnowledge = (int**)malloc(nodo->levelsize * sizeof(int*));
-
-    for (int i = 0; i < ((nodo->levelsize)); i++) {
-        printf("ciao come stai2\n");
-        nodo->levelKnowledge[i] = (int*)malloc((num_figli+1) * sizeof(int));
-    }
-    calculate_first_row_lk(nodo);
-    if(nodo->child!=NULL){
-        for (int i=1; i<=num_figli;i++){
-            printf("ciao come stai3\n");
-            node_tree* child=nodo->child;
-            calculate_levelKonwledge(child);
-            nodo->levelKnowledge[i]=child->levelKnowledge[0];
-            child=child->sibling;
-        }
-    }
-}
-*/
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -2401,59 +2246,43 @@ int main(int argc, char **argv)
     // leggi i dati da file e setta il grafo di input
     //printf("Inizio setting input\n");
     graph *graph_input = set_input(input_file);
-    printf("fatto set_input\n");
     //QueryPerformanceCounter(&t2);
     //diff_sec = (t2.QuadPart - t1.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine setting input in %f s\n", diff_sec);
-    /*
-    int *A;
-    int *B;
-    int num_radice=0;
-    */
-    compute_layers(graph_input);
-    printf("fatto compute_layers\n");
+
     // funzione per calcolare la coreness dei nodi
     //printf("Inizio calcolo coreness\n");
     compute_coreness(graph_input);
-    printf("fatto compute_coreness\n");
     //QueryPerformanceCounter(&t3);
     //diff_sec = (t3.QuadPart - t2.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine calcolo coreness in %f s\n", diff_sec);
 
     // funzione per modificare   la lista degli archi del grafo in ordine decrescente di coreness
     ordina_archi(graph_input);
-    printf("fatto ordina_archi\n");
     //QueryPerformanceCounter(&t4);
     //diff_sec = (t4.QuadPart - t3.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine ordinamento archi in %f s\n", diff_sec);
 
     // funzione per creare le foglie dell'albero di output e le foglie della struttura di supporto
     init(graph_input);
-    printf("fatto init\n");
     //QueryPerformanceCounter(&t5);
     //diff_sec = (t5.QuadPart - t4.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine creazione foglie output tree e disjoint set in %f s\n", diff_sec);
 
     // costruzione dell'albero di output
     node_tree *root = build(graph_input);
-    printf("fatto build\n");
     //QueryPerformanceCounter(&t6);
     //printf("Inizio costruzione albero di output in %f s\n", diff_sec);
     //diff_sec = (t6.QuadPart - t5.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine costruzione albero di output in %f s\n", diff_sec);
+
     // sistema output tree per eliminare parentele "padre-figlio" con stessa coreness
-    printf("numero dei nodi: %d\n", graph_input->num_vertices);
     sistema(root, graph_input->num_vertices);
-    printf("fatto sistema\n");
     //QueryPerformanceCounter(&t7);
     //diff_sec = (t7.QuadPart - t6.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine sistemazione output tree in %f s\n", diff_sec);
-    initLevelArrays(graph_input);
-    printf("fatto initlevelarrays\n");
-    
+
     calculate_node_numerousness(graph_input);
-    printf("fatto calculate node numerouseness\n");
-    // calculate_levelKonwledge(root);
     //QueryPerformanceCounter(&t8);
     //diff_sec = (t8.QuadPart - t7.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine calcolo numerosita' nodi in %f s\n", diff_sec);
@@ -2467,6 +2296,6 @@ int main(int argc, char **argv)
     printf("\nTempo totale: %f s\n", diff_sec);
 
     primitive(graph_input, root, input_file);
- 
+
     return 0;
 }
