@@ -18,12 +18,16 @@ typedef struct vicino_struct
 typedef struct vertex_struct
 {
     int id;
+    int degree;
     int indegree;
     int outdegree;
+    int coreness;
     int h_in;
     int h_out;
     int new_h_in;
     int new_h_out;
+    int is_in;
+    int is_out;
     vicino *primo_vicino_in;
     vicino *primo_vicino_out;
 } vertex;
@@ -201,7 +205,7 @@ int update_h_out(graph* grafo,int k){
     int temp;
     lista[0]=-1;
     quicksortDesc(lista, 1, num_neighbors - 1);
-    if(grafo->vertices[k].outdegree!=0){
+    /*if(grafo->vertices[k].outdegree!=0){
     printf("lista_h_out:[%d", lista[1]);
         for(int i=2;i<num_neighbors;i++){
             printf(", %d", lista[i]);
@@ -209,14 +213,14 @@ int update_h_out(graph* grafo,int k){
     }else{
        printf("lista_h_out:[ ");
     }
-    printf("]\n");
+    printf("]\n");*/
     int max_i = 0;
     for (int i = 1; i < num_neighbors; i++) {
         if (lista[i] >= i) {
             max_i = i;
         }
     }
-    printf("current h_out: %d\n", max_i);
+    //printf("current h_out: %d\n", max_i);
     free(lista);
     free(current);
     return max_i;
@@ -232,22 +236,23 @@ int update_h_in(graph* grafo,int k){
     int temp;
     lista[0]=-1;
     quicksortDesc(lista, 1, num_neighbors - 1); 
+    /*
     if(grafo->vertices[k].indegree!=0){
-        printf("lista_h_in:[%d", lista[1]);
+        //printf("lista_h_in:[%d", lista[1]);
         for(int i=2;i<num_neighbors;i++){
-            printf(", %d", lista[i]);
+            //printf(", %d", lista[i]);
         }
     }else{
-        printf("lista_h_in:[ ");
+        //printf("lista_h_in:[ ");
     }
-    printf("]\n");
+    //printf("]\n");*/
     int max_i = 0;
     for (int i = 1; i < num_neighbors; i++) {
         if (lista[i] >= i) {
             max_i = i;
         }
     }
-    printf("current h_in: %d\n", max_i);
+    //printf("current h_in: %d\n", max_i);
     free(lista);
     free(current);
     return max_i;
@@ -259,10 +264,10 @@ void compute_H_indexes(graph *grafo){
         printf("\n-------iterazione %d-------\n",count);
         count++;
         for(int i=1; i<=grafo->num_vertices;i++){
-            printf("\nVertice %d\n", i);
-            printf("vecchio h_in: %d\n",grafo->vertices[i].h_in);
+            //printf("\nVertice %d\n", i);
+            //printf("vecchio h_in: %d\n",grafo->vertices[i].h_in);
             grafo->vertices[i].new_h_in = update_h_in(grafo, i);
-            printf("vecchio h_out: %d\n",grafo->vertices[i].h_out);
+            //printf("vecchio h_out: %d\n",grafo->vertices[i].h_out);
             grafo->vertices[i].new_h_out = update_h_out(grafo, i);
             
         }
@@ -271,13 +276,25 @@ void compute_H_indexes(graph *grafo){
         for(int i=1; i<=grafo->num_vertices;i++){
             if(grafo->vertices[i].h_in!=grafo->vertices[i].new_h_in || grafo->vertices[i].h_out!=grafo->vertices[i].new_h_out){
                 converged=0;
-                printf("il vertice %d non rispetta la condizione di convergenza\n",i);
+                //printf("il vertice %d non rispetta la condizione di convergenza\n",i);
             }
             grafo->vertices[i].h_in=grafo->vertices[i].new_h_in;
             grafo->vertices[i].h_out=grafo->vertices[i].new_h_out;
-        } 
+        }
+         
     }
-    printf("\ntutti i vertici rispettano la condizione di convergenza\n");
+    //printf("\ntutti i vertici rispettano la condizione di convergenza\n");
+    for(int i=1; i<=grafo->num_vertices;i++){
+        if(grafo->vertices[i].new_h_in>grafo->vertices[i].new_h_out){
+            grafo->vertices[i].coreness=grafo->vertices[i].new_h_in;
+        }
+        if(grafo->vertices[i].new_h_in<grafo->vertices[i].new_h_out){
+            grafo->vertices[i].coreness=grafo->vertices[i].new_h_out;
+        }
+        if(grafo->vertices[i].new_h_in==grafo->vertices[i].new_h_out){
+            grafo->vertices[i].coreness=grafo->vertices[i].new_h_out;
+        }
+    }
 }
 
 int main(int argc, char **argv)
@@ -292,17 +309,14 @@ int main(int argc, char **argv)
 
 
     graph *graph_input = set_input(input_file);
-    for (int i=1;i<=graph_input->num_vertices;i++){
-        printf("il vertice %d ha h_in di ordine 0 = %d\n", i,  graph_input->vertices[i].h_in);
-        printf("il vertice %d ha h_out di ordine 0 = %d\n", i,  graph_input->vertices[i].h_out);
-        printf("\n");
-    }
+   
     compute_H_indexes(graph_input);
 
     printf("\nRISULTATO FINALE\n");
     for (int i=1;i<=graph_input->num_vertices;i++){
         printf("il vertice %d ha coreness_in %d\n", i,  graph_input->vertices[i].new_h_in);
         printf("il vertice %d ha coreness_out %d\n", i,  graph_input->vertices[i].new_h_out);
+        printf("il vertice %d ha coreness %d\n", i,  graph_input->vertices[i].coreness);
         printf("\n");
     }
 
