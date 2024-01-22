@@ -184,7 +184,7 @@ function charts(data, planeData, containerID){
              .attr("maxCorness", function(d) { return d.maxCoreness; })
              .attr("width", xScale.bandwidth())
              .attr("height", function(d) { return height - yScale(d.numNodi); })
-             .attr("fill", function(d){ return colorScale(d.maxCoreness)});
+             .attr("fill", function(d){ return colorScale((d.minCoreness+d.maxCoreness)/2)});
     // ADD <br> element
     d3.select(containerID).append("br")
     // Nested Treemap
@@ -193,13 +193,14 @@ function charts(data, planeData, containerID){
     padding_bottom = 5
     smallest_rect_height = 20
     var numLevel = calcolaMaxLevel(data)+1;
-    console.log("numero dei livelli: ");
-    console.log(numLevel);
+    var maxHeight=data.height
+    //console.log("numero dei livelli: ");
+    //console.log(numLevel);
     treemapHeight = ((data.height+1)*(padding_top + padding_bottom) + smallest_rect_height)*(numLevel)
     var svg2 = d3.select(containerID).append("svg")
                     .attr("id", "treemap")
                     .attr("width", width+margin+rightMargin)
-                    .attr("height", treemapHeight)
+                    .attr("height", treemapHeight+maxHeight*5)
                     //.style("transform", "scaleY(-1)"); 
     function _treemap(data){
       return d3.treemap()
@@ -221,12 +222,11 @@ function charts(data, planeData, containerID){
         .attr("dx", 0)
         .attr("stdDeviation", 3);
     root.eachAfter(function(d){d.x0 = xScale(d.data.Node)+100; d.x1 = d.x0+xScale.bandwidth()});  
-    var maxHeight=data.height
     root.eachAfter(function(d){
+       
         levels= d.data.MaxLevel-d.data.MinLevel-1;
         d.y0=(smallest_rect_height+10*(maxHeight+1))*(d.data.MinLevel)+5*d.depth;
         d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*2+10*(d.data.MaxLevel-d.data.MinLevel)+(smallest_rect_height+10*maxHeight)*levels+12*d.depth;
-        
         //d.y1= (smallest_rect_height+10*(maxHeight-d.depth))*(d.data.MaxLevel-d.data.MinLevel+1)+10*(d.data.MaxLevel-d.data.MinLevel);
         //d.y1=d.data.MaxLevel*smallest_rect_height+((d.data.MaxLevel-d.data.MinLevel)+2)*10*(maxHeight-d.depth);
         //d.y0=d.data.MinLevel*smallest_rect_height+((d.data.MaxLevel-d.data.MinLevel)+1)*5*(maxHeight-d.depth);
@@ -236,6 +236,139 @@ function charts(data, planeData, containerID){
             d.x1 = max+4*xScale.padding()
         }
     });
+    const node = svg2.selectAll("g");
+    root.eachAfter(function(d){
+        var c=0;
+        d.grissini=[];
+        console.log(d.data.Node)
+        console.log(d)
+        
+        if(d.parent!= null && d.parent.livellifigli==null)
+            d.parent.livellifigli=[];//ogni riga livello e ogni colonna apparte la prima indica dove mettere i grissini
+        for(let k=0; k<=numLevel;k++){
+            d.grissini[k]=0;
+        }
+        
+        let st=(smallest_rect_height+10*(maxHeight+1))*(d.data.MinLevel+1);
+        for(let i=0; i<=numLevel;i++){
+            if(d.data.Livelli[i]>0){
+                c++;
+            }
+			else{
+                let r = svg2.append("rect")
+                .attr("fill", colorScale((d.data.minCoreness+d.data.maxCoreness)/2))
+                .attr("width", d.x1-d.x0)
+				.attr("x", d.x0)
+				.attr("y", d.y0 + ((i-c)*st))
+                .attr("height", c * st-(10*d.depth))
+				.attr("rx",3)
+                //.attr("stroke", "black")    // Imposta il colore del contorno a nero
+                //.attr("stroke-width", 0.2)
+				.attr("opacity",1);
+				r.lower();
+				//console.log("Nodo: " + colorScale(d.data.maxCoreness) + " | ALTEZZA" + (c*st) + "| d.y0="+d.y0);
+                for(let j=i; j<=numLevel;j++){
+                    if(d.data.Livelli[j]>0 && (c>0 || d.grissini[i-1]==1)){
+                        d.grissini[i]=1;
+                        //.log("grissino inserito al livello "+i)
+                    }
+                }
+                c=0;
+                let u=0;
+                let bool=true;
+                if(d.children!=null){
+                    while(d.livellifigli[i][u]!=null){
+                        if(d.grissini[i]==1 && d.livellifigli[i][u]!=null){
+                            console.log("sono qui mio amico "+d.data.minCoreness +" - "+d.data.maxCoreness  )
+                            console.log("---")
+                            let stick=svg2.append("rect")
+                            .attr("fill", colorScale((d.data.minCoreness+d.data.maxCoreness)/2))
+                            .attr("width", (d.livellifigli[i][u][1]-d.livellifigli[i][u][0])/5 + 5*(maxHeight-d.depth))
+                            .attr("x", d.livellifigli[i][u][0] - 5*(maxHeight-d.depth)/2 + (d.livellifigli[i][u][1]-d.livellifigli[i][u][0])/2.3)
+                            .attr("y", d.y0 + ((i)*st)-(10*d.depth))
+                            .attr("height",st+(10*d.depth))
+                            .attr("rx",0)
+                            //.attr("stroke", "black")    // Imposta il colore del contorno a nero
+                            //.attr("stroke-width",0.2)
+                            .attr("opacity",1);
+                            stick.lower();   
+                            bool=false;
+                        }
+                        u++;
+                    }
+                    if(d.grissini[i]==1 && bool){
+                        console.log("sono qui mio caro")
+                        let stick=svg2.append("rect")
+                        .attr("fill", colorScale((d.data.minCoreness+d.data.maxCoreness)/2))
+                        .attr("width", (d.x1-d.x0)/5+ 5*(maxHeight-d.depth))
+                        .attr("x", d.x0- 5*(maxHeight-d.depth)/2 + (d.x1-d.x0)/2.3)
+                        .attr("y", d.y0 + ((i)*st)-(10*d.depth))
+                        .attr("height",st+(10*d.depth))
+                        .attr("rx",0)
+                        //.attr("stroke", "black")    // Imposta il colore del contorno a nero
+                        //.attr("stroke-width",0.2)
+                        .attr("opacity",1);
+                        stick.lower();
+                    }  
+                }else{
+                    if(d.grissini[i]==1){
+                        let stick=svg2.append("rect")
+                        .attr("fill", colorScale((d.data.minCoreness+d.data.maxCoreness)/2))
+                        .attr("width", (d.x1-d.x0)/5 + 5*(maxHeight-d.depth))
+                        .attr("x", d.x0 -  5*(maxHeight-d.depth)/2 +(d.x1-d.x0)/2.3)
+                        .attr("y", d.y0 + ((i)*st)-(10*d.depth))
+                        .attr("height",st+(10*d.depth))
+                        .attr("rx",0)
+                        //.attr("stroke", "black")    // Imposta il colore del contorno a nero
+                        //.attr("stroke-width", 0.2)
+                        .attr("opacity",1);
+                        stick.lower();   
+                }  
+                }
+                //scorrere le righe e poi le colonne
+                
+
+            }
+        }
+        if(d.children==null){
+            for (let i =0; i<d.grissini.length;i++){
+                if (d.parent!= null && !d.parent.livellifigli[i]) {
+                    
+                    d.parent.livellifigli[i] = [];
+                  }
+                if(d.grissini[i]>0){
+                    d.parent.livellifigli[i].push(([d.x0,d.x1]))
+                }
+            }
+        }else{
+            for(let i=0; i<=numLevel;i++){
+                if (d.parent!= null && !d.parent.livellifigli[i]) {
+                    d.parent.livellifigli[i] = [];
+                }
+                if(d.grissini[i]>0 && d.livellifigli[i]!=null){
+                    for (let j=0; j<d.livellifigli[i].length;j++){
+                        d.parent.livellifigli[i].push(([d.livellifigli[i][j][0],d.livellifigli[i][j][1]]))
+                        
+                    }
+                }else if(d.grissini[i]>0  && d.livellifigli[i]==null){
+                    console.log("sono qui");
+                    d.parent.livellifigli[i].push(([d.x0,d.x1]))
+                }
+            }
+        }
+       
+        
+       
+    });
+    root.eachAfter(function(d){
+        if (d.children==null){
+            
+        }
+        if (d.parent==null){
+           // console.log(d.data.Node+" sono una radice perche non ho genitori.")
+        }
+    });
+    /*
     const node = svg2.selectAll("g")
         .data(d3.group(root, d => d.depth))
         .join("g")
@@ -249,8 +382,9 @@ function charts(data, planeData, containerID){
         .attr("fill", d => colorScale(d.data.maxCoreness))
         .attr("width", d => (d.x1 - d.x0))
         .attr("height", d => (d.y1))
-        .attr("rx", 15);
-
+        .attr("rx", 15)
+        .attr("opacity",0.7);
+    */
     // Calcola l'altezza media dei rettangoli a ciascun livello
     const levelHeights = [];
     for (let i = 0; i <= numLevel; i++) {
@@ -259,8 +393,7 @@ function charts(data, planeData, containerID){
     }
 
     var levelGap=levelHeights[1]-levelHeights[0];
-    console.log(levelGap);
-    
+    /*
     // Aggiunge linee orizzontali per ogni livello dei nodi
     for(let i=0; i<levelHeights.length;i++){
         console.log(levelHeights[i]);
@@ -307,9 +440,9 @@ function charts(data, planeData, containerID){
             .attr("stroke-width", 2); // Larghezza delle linee
     }
 
-
+*/
 // Aggiungi linee orizzontali per ogni livello dei nodi
-/*
+
 for (let i = 0; i <= numLevel - 1; i++) {
     const centerY = levelHeights[i];
     svg2.append("line")
@@ -320,7 +453,7 @@ for (let i = 0; i <= numLevel - 1; i++) {
         .attr("stroke", "black") // Colore delle linee
         .attr("stroke-width", 1); // Larghezza delle linee
 }
-*/
+
 // Aggiungi il testo
 for (let i = 0; i < numLevel; i++) {
     const centerY = levelHeights[i];

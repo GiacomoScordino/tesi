@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connected Components Coreness</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<body>
+  <label for="scaleValue">Scala:</label>
+  <input type="text" id="scaleValue" value="1">
+  <button onclick="updateScale()">Scala</button>
+  <button onclick="adjustScale(1)">+</button>
+<button onclick="adjustScale(-1)">-</button>
+  <div class="container" id="container"></div>
+  <div id="my_dataviz"></div>
+  <script> 
+    let max_cin=0, max_cout=0, max_heat=0;  
+    const margin = {top: 75, right: 75, bottom: 75, left: 75};
+  
+    // append the svg object to the body of the page
+    
+    // Inizializziamo le variabili per memorizzare i massimi di ciascuna colonna
+    let maxX = 0;
+    let maxY = 0;
+    let maxHeat = 0;
+    function adjustScale(amount) {
+      var scaleValueInput = document.getElementById('scaleValue');
+      var currentScale = parseFloat(scaleValueInput.value);
+      
+      // Incrementa o decrementa il valore della scala
+      currentScale += amount;
+
+      // Impedisce che il valore della scala sia inferiore a 1
+      currentScale = Math.max(1, currentScale);
+
+      // Aggiorna il valore nel campo di input
+      scaleValueInput.value = currentScale.toString();
+    }
+    function updateScale(){
+      const scaleValueInput = document.getElementById('scaleValue');
+      const scaleValue = parseInt(scaleValueInput.value);
+      localStorage.setItem('scaleValue', scaleValue);
+      window.location.reload();
+      
+    }
+    console.log("prima")
+    document.addEventListener('DOMContentLoaded', function () {
+      const storedScaleValue = localStorage.getItem('scaleValue');
+      if (storedScaleValue !== null) {
+        document.getElementById('scaleValue').value = storedScaleValue;
+      }
+    });
+    console.log("dopo")
+    // Utilizziamo d3.js per leggere il file CSV
+    d3.csv('epinions.csv').then(function(data) {
+      var scaledData=[]
+      const scaleValueInput = document.getElementById('scaleValue');
+      const scaleValue = parseInt(scaleValueInput.value);
+      if (scaleValue > 1) {
+        const heatSums = {};
+
+        // Itera attraverso ogni riga nel dataset originale
+        data.forEach((row) => {
+            // Calcola il valore del gruppo lungo l'asse x
+            const groupX = Math.floor(row.x / scaleValue);
+            // Calcola il valore del gruppo lungo l'asse y
+            const groupY = Math.floor(row.y / scaleValue);
+
+            // Crea la chiave per il gruppo
+            const key = `${groupX}-${groupY}`;
+
+            // Aggiorna la somma di heat per il gruppo
+            heatSums[key] = (heatSums[key] || 0) + parseInt(row.heat);
+        });
+
+        // Costruisci il nuovo dataset basato sulle somme di heat
+        Object.keys(heatSums).forEach((key) => {
+          const [groupX, groupY] = key.split('-');
+          scaledData.push({
+            x: `${groupX * scaleValue}-${(groupX * scaleValue) + scaleValue - 1}`,
+            y: `${groupY * scaleValue}-${(groupY * scaleValue) + scaleValue - 1}`,
+            heat: heatSums[key],
+          });
+        });
+      } else {
+        scaledData = data;
+      }
+
+      console.log(scaledData);
+      scaledData.forEach(function(d) {
+        maxX = Math.max(maxX, parseFloat(d.x));
+        maxY = Math.max(maxY, parseFloat(d.y));
+        maxHeat = Math.max(maxHeat, parseFloat(d.heat));
+      });
+      calculate_HeatMap(maxX,maxY,maxHeat,scaledData,scaleValue);
+    }).catch(function(error) {
+      // Gestione degli errori durante il caricamento del file
+      console.error('Si è verificato un errore durante il caricamento del file:', error);
+    });
+
+    function calculate_HeatMap(maxX,maxY, maxHeat,data,scaleValue){
+      console.log("Massimo di X:", maxX);
+      console.log("Massimo di Y:", maxY);
+      console.log("Massimo di Heat:", maxHeat); 
+      var width =0;
+      var height = 0;
+      if(maxX>maxY){
+        width=maxX*10/scaleValue;
+        height=maxX*10/scaleValue
+      }else{
+        width=maxY*10/scaleValue;
+        height=maxY*10/scaleValue
+      }
+
+      const svg = d3.select("#my_dataviz")
+      .append("svg")
+        .attr("width", (width*4)+ margin.left + margin.right)
+        .attr("height", (height*4) + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+      let myGroups = [];
+      let myVars = [];
+      for(let i=0; i<data.length;i++){
+        if(!myGroups.includes(data[i].x)){
+          myGroups[i]=data[i].x.toString();
+        }
+      }
+      myGroups = myGroups.filter(elemento => elemento !== "" && elemento !== null && elemento !== undefined);
+      console.log("myGroups")
+      console.log(myGroups)
+      /*
+      for (let i = 0; i <= maxX; i++) {
+        myGroups[i]=i.toString();
+      }*/
+      for(let i=0; i<data.length;i++){
+        if(!myVars.includes(data[i].y)){
+          myVars[i]=data[i].y.toString();
+        }
+      }
+      myVars = myVars.filter(elemento => elemento !== "" && elemento !== null && elemento !== undefined);
+      console.log("myVars")
+      console.log(myVars)
+      /*
+      for (let i = 0; i <= maxY; i++) {
+        myVars[i]=i.toString();
+      }*/
+      // Build X scales and axis:
+      const bandWidth = 5
+      const x = d3.scaleBand()
+        .range([ 0, (width*4) ])
+        .domain(myGroups)
+        .paddingInner(0.01) // Imposta il padding interno tra i tick dell'asse X
+      svg.append("g")
+        .attr("transform", `translate(0, ${width*4})`)
+        .call(d3.axisBottom(x))
+      
+      // Build Y scales and axis:
+      const y = d3.scaleBand()
+        .range([ height*4, 0 ])
+        .domain(myVars)
+        .paddingInner(0.01) // Imposta il padding interno tra i tick dell'asse X
+      svg.append("g")
+        .call(d3.axisLeft(y));
+      
+      svg.append("text")
+        .attr("transform", `translate(${width*4 / 2}, ${height*4 + margin.top-30 })`) // Posiziona l'etichetta dell'asse X
+        .style("text-anchor", "middle")
+        .style("font-size", "14px") 
+        .text("IN CORENESS");
+
+        svg.append("text")
+        .attr("transform", `translate(0, ${height*4 / 2}) rotate(-90)`)
+        .attr("y", -margin.left + 20) // Aggiungi una regolazione per posizionare l'etichetta sopra l'asse y
+        .style("text-anchor", "middle")
+        .style("font-size", "15px") 
+        .text("OUT CORENESS");
+        /*const myScale = d3.scaleLog()
+          .domain([1, maxHeat + 1]) // Assicurati di evitare il logaritmo di zero
+          .range([0, 1]); // Range per la scala di colore predefinita di D3
+          // Inverti l'ordine della scala di colore e utilizza un'altra funzione di interpolazione
+        const myColor = d3.scaleSequential(d => d3.interpolateRdYlGn(1 - myScale(d))); // RdYlGn va dal rosso al verde
+        
+        
+        */
+        const myScale = d3.scaleLog()
+        .domain([1, maxHeat + 1]) // Assicurati di evitare il logaritmo di zero
+        .range([0, 1]); // Range per la scala di colore predefinita di D3
+        //const myColor = d3.scaleSequential(d => d3.interpolateRdYl(myScale(d)));
+        const myColor = d3.scaleSequential(d => d3.interpolateRdYlGn(1-myScale(d))); //verde scuro -> verde chiaro -> crema -> arancione -> rosso -> rosso scuro
+        //const myColor = d3.scaleSequential(d => d3.interpolateViridis(myScale(d)));
+        //const myColor = d3.scaleSequential(d => d3.interpolateMagma(myScale(d)));
+        //const myColor = d3.scaleSequential(d => d3.interpolatePlasma(myScale(d)));
+        //const myColor = d3.scaleSequential(d => d3.interpolateSpectral(myScale(d)));
+        //const myColor = d3.scaleSequential(d => d3.interpolatePuOr(myScale(d)));
+        //const myColor = d3.scaleSequential(d => d3.interpolateRdBu(myScale(d)));
+        // Ora myColor sarà una scala di colori che va dal verde al rosso
+
+        //Read the data
+        let heatValue;
+        svg.selectAll()
+          .data(data, function(d) {
+            return d.x+':'+d.y;
+          })
+          .join("rect")
+          .attr("x", function(d) { return x(d.x) })
+          .attr("y", function(d) { return y(d.y) })
+          .attr("width", x.bandwidth() )
+          .attr("height", y.bandwidth() )
+          .style("fill", function(d) {
+            if(d.heat==0){
+              return "white"
+            }else {
+              return myColor(d.heat);
+            }
+          });
+    }
+    
+  
+    </script>
+</body>
+</html>

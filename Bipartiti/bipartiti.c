@@ -142,7 +142,7 @@ graph *set_input(char *input_path)
             if (sscanf(line, "%d %d", &start, &end) == 2)
             { 
               end=end+verticiSinistra;
-              printf("%d -> %d\n", start, end);
+              //printf("%d -> %d\n", start, end);
               c++;
               if (start != end)
                 { // esegui la computazione solo se l'arco non è un loop
@@ -2199,11 +2199,11 @@ printf("il numero di nodi sono %d\n",grafo->num_vertices);
             n->parent->n_tm_numerousness += 1;
             if(c==c_in){
                 n->parent->n_tm_numerousnessL += 1;
-                printf("aggiorno a sinistra\n");
+                //printf("aggiorno a sinistra\n");
             }
             if(c==c_out){
                 n->parent->n_tm_numerousnessR += 1;
-                printf("aggiorno a destra\n");
+                //printf("aggiorno a destra\n");
             }
            
             // if(n->parent->n_tm_numerousness < 0 ) printf("id padre: %d,     id nodo: %d\n", n->parent->id, n->id);

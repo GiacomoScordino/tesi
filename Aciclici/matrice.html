@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connected Components Coreness</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<body>
+  <div class="container" id="container"></div>
+  <script>
+    d3.csv('matrice.csv')
+      .then(function(data) {
+        // La variabile 'data' contiene i dati del file CSV
+        console.log(data);
+        // Puoi manipolare i dati qui o passarli a funzioni per elaborazioni ulteriori
+
+        // Ad esempio, puoi visualizzare i dati in un elemento div
+        var container = document.getElementById('container');
+        container.innerHTML = JSON.stringify(data); // Mostra i dati come stringa JSON nel div
+      })
+      .catch(function(error){
+        // Gestione dell'errore nel caso in cui il file non venga caricato correttamente
+        console.error('Si è verificato un errore:', error);
+      });
+  </script>
+</body>
+</html>

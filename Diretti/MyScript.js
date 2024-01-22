@@ -1,5 +1,8 @@
 // Parse the Data
-function getData(jsonFile, callBack){d3.json(jsonFile).then(data => callBack(data))}
+function getData(jsonFile, callBack)
+{
+    d3.json(jsonFile).then(data => callBack(data))
+}
 
 // Add information about height and depth of nodes in the tree data structure
 function compute_height_depth(node, depth){
