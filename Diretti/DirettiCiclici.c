@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#define V 1000000   // 150000000
-#define E 10000000 // 2000000000
+#define V 2000000   // 150000000
+#define E 5000000// 2000000000
 // 68,349,466 &  1,811,849,342
 
 // struttura di output
@@ -142,7 +142,7 @@ graph *set_input(char *input_path)
             if (sscanf(line, "%d %d", &start, &end) == 2)
             { 
               //end=end+verticiSinistra;
-              printf("%d -> %d\n", start, end);
+              //printf("%d -> %d\n", start, end);
               c++;
               if (start != end)
                 { // esegui la computazione solo se l'arco non è un loop
@@ -2199,11 +2199,11 @@ printf("il numero di nodi sono %d\n",grafo->num_vertices);
             n->parent->n_tm_numerousness += 1;
             if(c==c_in){
                 n->parent->n_tm_numerousnessL += 1;
-                printf("aggiorno a sinistra\n");
+                //printf("aggiorno a sinistra\n");
             }
             if(c==c_out){
                 n->parent->n_tm_numerousnessR += 1;
-                printf("aggiorno a destra\n");
+                //printf("aggiorno a destra\n");
             }
            
             // if(n->parent->n_tm_numerousness < 0 ) printf("id padre: %d,     id nodo: %d\n", n->parent->id, n->id);
@@ -2252,7 +2252,135 @@ void calculate_depth(graph *grafo)
         }
     }
 }
+void output_json_matrix(int** matrix, int max, char *input_file){
+    char *output_path = malloc(sizeof(char) * 300);
+    strncpy(output_path, input_file, 299);
+    // find pointer to last '/' in string
+    char *lastslash = strrchr(output_path, '\\');
+    if (lastslash)            // if found
+        *(lastslash + 1) = 0; //   terminate the string right after the '/'
 
+    output_path = strncat(output_path, "\\matrix2.csv", 280);
+    printf("Sto salvando in %s", output_path);
+    FILE *fp;
+    fp = fopen(output_path, "w");
+    fprintf(fp, "x,y,heat\n");
+    for (int i = 0; i < max; i++) {
+        for (int j = 0; j < max; j++) {
+            fprintf(fp, "%d,%d,%d\n", i, j, matrix[i][j]);
+        }
+    }
+    fclose(fp);
+}
+void output_json_matrix_degree(int** matrix, int max_in,int max_out, char *input_file){
+    char *output_path = malloc(sizeof(char) * 300);
+    strncpy(output_path, input_file, 299);
+    // find pointer to last '/' in string
+    char *lastslash = strrchr(output_path, '\\');
+    if (lastslash)            // if found
+        *(lastslash + 1) = 0; //   terminate the string right after the '/'
+
+    output_path = strncat(output_path, "\\matrix_degree.json", 280);
+    printf("Sto salvando in %s", output_path);
+    FILE *fp;
+    fp = fopen(output_path, "w");
+    int i=0;
+    fprintf(fp, "[");
+    for (i = 0; i < max_in-1; i++) {
+        int j=0;
+        fprintf(fp, "[");
+        for (j = 0; j < max_out-1; j++) {
+            fprintf(fp, "%d,",matrix[i][j]);
+        }
+        fprintf(fp, "%d\n",matrix[i][j]);
+        fprintf(fp, "],");
+    }
+
+    int j=0;
+    fprintf(fp, "[");
+    for (j = 0; j < max_out-1; j++) {
+        fprintf(fp, "%d,",matrix[i][j]);
+    }
+    fprintf(fp, "%d\n",matrix[i][j]);
+    fprintf(fp, "]");
+    fprintf(fp, "]");
+    fclose(fp);
+}
+
+void compute_matrix(graph *grafo,char *input_file){
+    int max=0;
+    int **matrice;
+    for(int i=1; i<= grafo->num_vertices;i++){
+        if(grafo->vertices[i].coreness_in>max){
+            max=grafo->vertices[i].coreness_in;
+        }
+        if(grafo->vertices[i].coreness_out>max){
+            max=grafo->vertices[i].coreness_out;
+        }
+    }
+    max=max+1;
+    matrice = (int **)calloc(max, sizeof(int *));
+    for (int i = 0; i < max; i++) {
+        matrice[i] = (int *)calloc(max, sizeof(int));
+    }
+    for(int i=1; i<=grafo->num_vertices;i++){
+        int in = grafo->vertices[i].coreness_in;
+        int out= grafo->vertices[i].coreness_out;
+        if (in >= 0 && in < max && out >= 0 && out < max) {
+            if(grafo->vertices[i].id!=0)
+                matrice[in][out] += 1;
+        } else {
+            printf("Errore: in o out al di fuori dei limiti della matrice.\n");
+        }
+  
+    }
+    /*for (int i = 0; i < max; i++) {
+        for (int j = 0; j < max; j++) {
+            printf("%d ", matrice[i][j]);
+        }
+        printf("\n");
+    }*/
+    output_json_matrix(matrice,max,input_file);
+    free(matrice);
+}
+void compute_matrix_degree(graph *grafo,char *input_file){
+    int max_in=0;
+    int max_out=0;
+    int **matrice;
+    for(int i=1; i<= grafo->num_vertices;i++){
+        if(grafo->vertices[i].indegree>max_in){
+            max_in=grafo->vertices[i].indegree;
+        }
+        if(grafo->vertices[i].outdegree>max_out){
+            max_out=grafo->vertices[i].outdegree;
+        }
+    }
+    max_in=max_in+1;
+    max_out=max_out+1;
+    matrice = (int **)calloc(max_in, sizeof(int *));
+    for (int i = 0; i < max_in; i++) {
+        matrice[i] = (int *)calloc(max_out, sizeof(int));
+    }
+    for(int i=1; i<=grafo->num_vertices;i++){
+        int in = grafo->vertices[i].indegree;
+        int out= grafo->vertices[i].outdegree;
+        if (in >= 0 && in < max_in && out >= 0 && out < max_out) {
+            if(grafo->vertices[i].id!=0)
+                matrice[in][out] += 1;
+        } else {
+            printf("Errore: in o out al di fuori dei limiti della matrice.\n");
+        }
+  
+    }
+    /*for (int i = 0; i < max; i++) {
+        for (int j = 0; j < max; j++) {
+            printf("%d ", matrice[i][j]);
+        }
+        printf("\n");
+    }*/
+    output_json_matrix_degree(matrice,max_in,max_out,input_file);
+    free(matrice);
+}
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -2286,7 +2414,8 @@ int main(int argc, char **argv)
     //QueryPerformanceCounter(&t3);
     //diff_sec = (t3.QuadPart - t2.QuadPart) / (double)frequency.QuadPart;
     //printf("Fine calcolo coreness in %f s\n", diff_sec);
-
+    compute_matrix(graph_input,input_file);
+    //compute_matrix_degree(graph_input,input_file);
     // funzione per modificare   la lista degli archi del grafo in ordine decrescente di coreness
     ordina_archi(graph_input);
     //QueryPerformanceCounter(&t4);
